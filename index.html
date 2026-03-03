@@ -217,22 +217,35 @@
         const IconGlobe = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
 
         function App() {
-            const [uiLang, setUiLang] = useState('he'); // Default UI language
-            const [text, setText] = useState('שלום לכולם, ברוכים הבאים להדרכה החדשה שלנו.\nהיום נדבר על איך אנחנו לוקחים את הלמידה הארגונית צעד אחד קדימה.\nבעידן של היום, אנחנו ארכיטקטים של מערכות למידה.\nבמקום לקנות מערכות סגורות, אנחנו בונים כלים מותאמים אישית בקוד.\nהטלפרומפטר הזה הוא דוגמה מצוינת.\nאתם יכולים לדבר בקצב שלכם, והמסך ירוץ איתכם.\nתודה רבה ונתראה!');
-            const [fontSize, setFontSize] = useState(48);
+            const [uiLang, setUiLang] = useState('he');
+            
+            // שולף טקסט מהזיכרון המקומי או שם טקסט ברירת מחדל
+            const [text, setText] = useState(() => {
+                const savedText = localStorage.getItem('vibe_prompter_text');
+                return savedText !== null ? savedText : 'שלום לכולם, ברוכים הבאים להדרכה החדשה שלנו.\nהיום נדבר על איך אנחנו לוקחים את הלמידה הארגונית צעד אחד קדימה.\nבעידן של היום, אנחנו ארכיטקטים של מערכות למידה.\nבמקום לקנות מערכות סגורות, אנחנו בונים כלים מותאמים אישית בקוד.\nהטלפרומפטר הזה הוא דוגמה מצוינת.\nאתם יכולים לדבר בקצב שלכם, והמסך ירוץ איתכם.\nתודה רבה ונתראה!';
+            });
+
+            // ערכי ברירת מחדל חדשים (30px, 20% פדינג, והיפוך אנכי מופעל)
+            const [fontSize, setFontSize] = useState(30);
             const [alignment, setAlignment] = useState('center');
-            const [padding, setPadding] = useState(10);
+            const [padding, setPadding] = useState(20);
+            const [mirrorMode, setMirrorMode] = useState(false);
+            const [flipVertical, setFlipVertical] = useState(true);
+
             const [isPlaying, setIsPlaying] = useState(false);
             const [isListening, setIsListening] = useState(false);
             const [currentWordIndex, setCurrentWordIndex] = useState(0);
-            const [mirrorMode, setMirrorMode] = useState(false);
-            const [flipVertical, setFlipVertical] = useState(false);
             const [supportError, setSupportError] = useState('');
             
             const containerRef = useRef(null);
             const recognitionRef = useRef(null);
             const wordsRef = useRef([]);
             const lastSpeechRef = useRef('');
+
+            // שמירת הטקסט ל-LocalStorage בכל פעם שהוא משתנה
+            useEffect(() => {
+                localStorage.setItem('vibe_prompter_text', text);
+            }, [text]);
 
             const t = (key) => translations[uiLang][key] || translations['en'][key];
             const isRtlUI = uiLang === 'he' || uiLang === 'ar';
@@ -245,7 +258,7 @@
                     ru: (text.match(/[А-Яа-я]/g) || []).length,
                     zh: (text.match(/[\u4E00-\u9FA5]/g) || []).length,
                     hi: (text.match(/[\u0900-\u097F]/g) || []).length,
-                    en: (text.match(/[a-zA-Z]/g) || []).length // Latin fallback
+                    en: (text.match(/[a-zA-Z]/g) || []).length 
                 };
 
                 let dominant = 'en';
@@ -257,7 +270,6 @@
                     }
                 }
                 
-                // Map to speech recognition locales
                 const locales = {
                     he: 'he-IL',
                     ar: 'ar-SA',
@@ -275,7 +287,6 @@
 
             const cleanWord = (word) => {
                 if (!word) return '';
-                // Keep global characters for cleaning
                 return word.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase().trim();
             };
 
@@ -402,6 +413,14 @@
                 }
             }, [currentWordIndex, isPlaying]);
 
+            // פונקציה לטיפול בלחיצה על מילה: קופצת למילה, מסירה את הירוק מההמשך ומאפסת את זיכרון ההאזנה
+            const handleWordClick = (index) => {
+                if (isPlaying) {
+                    setCurrentWordIndex(index);
+                    lastSpeechRef.current = ''; // איפוס הזיכרון כדי למנוע קפיצות על בסיס משפטים ישנים
+                }
+            };
+
             const displayTransform = `${mirrorMode ? 'scaleX(-1)' : ''} ${flipVertical ? 'scaleY(-1)' : ''}`.trim() || 'none';
 
             // Dynamic layout classes based on RTL/LTR
@@ -516,11 +535,12 @@
                                         <span 
                                             key={`word-${index}`} 
                                             id={`word-${index}`} 
+                                            onClick={() => handleWordClick(index)}
                                             className={`inline-block mx-1 transition-colors duration-300 ${
                                                 isPlaying 
                                                     ? (isPast ? 'text-green-400' : 'text-white font-bold') 
                                                     : 'text-white font-bold'
-                                            }`}
+                                            } ${isPlaying ? 'cursor-pointer hover:opacity-75' : ''}`}
                                         >
                                             {word}
                                         </span>
@@ -541,5 +561,3 @@
     </script>
 </body>
 </html>
-
-
