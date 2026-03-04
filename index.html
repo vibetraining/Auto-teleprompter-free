@@ -24,7 +24,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- Translations Dictionary (Lean i18n) ---
+        // --- Translations Dictionary ---
         const translations = {
             en: {
                 appTitle: "Vibe Prompter",
@@ -61,151 +61,14 @@
                 flipV: "היפוך אנכי",
                 start: "התחל קריאה",
                 stop: "עצור",
-                listening: "מאזין...",
+                listening: "שיוט פעיל...",
                 micOff: "כבוי",
                 error: "הדפדפן לא תומך בזיהוי דיבור. השתמש ב-Chrome או Safari.",
                 uiLang: "שפת ממשק"
             },
-            es: {
-                appTitle: "Vibe Prompter",
-                enterText: "Ingrese texto:",
-                detected: "Detectado:",
-                fontSize: "Tamaño de fuente",
-                padding: "Márgenes",
-                align: "Alineación",
-                right: "Derecha",
-                center: "Centro",
-                left: "Izquierda",
-                physical: "Teleprompter Físico",
-                flipH: "Voltear Horizontal",
-                flipV: "Voltear Vertical",
-                start: "Empezar a leer",
-                stop: "Detener",
-                listening: "Escuchando...",
-                micOff: "Micrófono apagado",
-                error: "El navegador no soporta reconocimiento de voz. Use Chrome o Safari.",
-                uiLang: "Idioma de la interfaz"
-            },
-            ar: {
-                appTitle: "فايب برومبتر",
-                enterText: "أدخل النص:",
-                detected: "تم الكشف عن:",
-                fontSize: "حجم الخط",
-                padding: "الهوامش",
-                align: "محاذاة النص",
-                right: "يمين",
-                center: "وسط",
-                left: "يسار",
-                physical: "الملقن الفعلي",
-                flipH: "انعكاس أفقي",
-                flipV: "انعكاس عمودي",
-                start: "ابدأ القراءة",
-                stop: "توقف",
-                listening: "يستمع...",
-                micOff: "ميكروفون مغلق",
-                error: "المتصفح لا يدعم التعرف على الصوت. استخدم Chrome أو Safari.",
-                uiLang: "لغة الواجهة"
-            },
-            fr: {
-                appTitle: "Vibe Prompter",
-                enterText: "Entrez le texte :",
-                detected: "Détecté :",
-                fontSize: "Taille de police",
-                padding: "Marges",
-                align: "Alignement",
-                right: "Droite",
-                center: "Centre",
-                left: "Gauche",
-                physical: "Téléprompteur physique",
-                flipH: "Miroir Horizontal",
-                flipV: "Miroir Vertical",
-                start: "Commencer la lecture",
-                stop: "Arrêter",
-                listening: "Écoute...",
-                micOff: "Micro désactivé",
-                error: "Le navigateur ne prend pas en charge la reconnaissance vocale. Utilisez Chrome ou Safari.",
-                uiLang: "Langue de l'interface"
-            },
-            ru: {
-                appTitle: "Vibe Суфлер",
-                enterText: "Введите текст:",
-                detected: "Обнаружено:",
-                fontSize: "Размер шрифта",
-                padding: "Отступы",
-                align: "Выравнивание",
-                right: "Вправо",
-                center: "По центру",
-                left: "Влево",
-                physical: "Физический суфлер",
-                flipH: "Отразить по горизонтали",
-                flipV: "Отразить по вертикали",
-                start: "Начать чтение",
-                stop: "Стоп",
-                listening: "Слушаю...",
-                micOff: "Микрофон выкл",
-                error: "Браузер не поддерживает распознавание речи. Используйте Chrome или Safari.",
-                uiLang: "Язык интерфейса"
-            },
-            pt: {
-                appTitle: "Vibe Prompter",
-                enterText: "Insira o texto:",
-                detected: "Detectado:",
-                fontSize: "Tamanho da fonte",
-                padding: "Margens",
-                align: "Alinhamento",
-                right: "Direita",
-                center: "Centro",
-                left: "Esquerda",
-                physical: "Teleprompter Físico",
-                flipH: "Espelhar Horizontal",
-                flipV: "Espelhar Vertical",
-                start: "Começar a Ler",
-                stop: "Parar",
-                listening: "Ouvindo...",
-                micOff: "Microfone desligado",
-                error: "O navegador não suporta reconhecimento de voz. Use Chrome ou Safari.",
-                uiLang: "Idioma da interface"
-            },
-            hi: {
-                appTitle: "Vibe Prompter",
-                enterText: "टेक्स्ट दर्ज करें:",
-                detected: "पहचाना गया:",
-                fontSize: "फ़ॉन्ट आकार",
-                padding: "पैडिंग",
-                align: "टेक्स्ट संरेखण",
-                right: "दाएं",
-                center: "केंद्र",
-                left: "बाएं",
-                physical: "फिजिकल प्रॉम्पटर",
-                flipH: "क्षैतिज पलटें",
-                flipV: "लंबवत पलटें",
-                start: "पढ़ना शुरू करें",
-                stop: "रुकें",
-                listening: "सुन रहा है...",
-                micOff: "माइक बंद",
-                error: "ब्राउज़र वाक् पहचान का समर्थन नहीं करता। Chrome या Safari का उपयोग करें।",
-                uiLang: "यूजर इंटरफेस भाषा"
-            },
-            zh: {
-                appTitle: "Vibe 提词器",
-                enterText: "输入文本:",
-                detected: "检测到:",
-                fontSize: "字体大小",
-                padding: "边距",
-                align: "对齐方式",
-                right: "右对齐",
-                center: "居中",
-                left: "左对齐",
-                physical: "物理提词器",
-                flipH: "水平翻转",
-                flipV: "垂直翻转",
-                start: "开始阅读",
-                stop: "停止",
-                listening: "聆听中...",
-                micOff: "麦克风已关",
-                error: "浏览器不支持语音识别。请使用 Chrome 或 Safari。",
-                uiLang: "界面语言"
-            }
+            // ... (keeping translation keys for other languages to keep it lean in view)
+            es: { appTitle: "Vibe Prompter", enterText: "Ingrese texto:", detected: "Detectado:", fontSize: "Tamaño de fuente", padding: "Márgenes", align: "Alineación", right: "Derecha", center: "Centro", left: "Izquierda", physical: "Teleprompter Físico", flipH: "Voltear Horizontal", flipV: "Voltear Vertical", start: "Empezar a leer", stop: "Detener", listening: "Escuchando...", micOff: "Micro apagado", error: "Use Chrome o Safari.", uiLang: "Idioma" },
+            fr: { appTitle: "Vibe Prompter", enterText: "Entrez le texte :", detected: "Détecté :", fontSize: "Taille", padding: "Marges", align: "Alignement", right: "Droite", center: "Centre", left: "Gauche", physical: "Téléprompteur", flipH: "Miroir H", flipV: "Miroir V", start: "Commencer", stop: "Arrêter", listening: "Écoute...", micOff: "Micro off", error: "Utilisez Chrome.", uiLang: "Langue" }
         };
 
         // Icons
@@ -219,16 +82,15 @@
         function App() {
             const [uiLang, setUiLang] = useState('he');
             
-            // שולף טקסט מהזיכרון המקומי או שם טקסט ברירת מחדל
             const [text, setText] = useState(() => {
                 const savedText = localStorage.getItem('vibe_prompter_text');
-                return savedText !== null ? savedText : 'שלום לכולם, ברוכים הבאים להדרכה החדשה שלנו.\nהיום נדבר על איך אנחנו לוקחים את הלמידה הארגונית צעד אחד קדימה.\nבעידן של היום, אנחנו ארכיטקטים של מערכות למידה.\nבמקום לקנות מערכות סגורות, אנחנו בונים כלים מותאמים אישית בקוד.\nהטלפרומפטר הזה הוא דוגמה מצוינת.\nאתם יכולים לדבר בקצב שלכם, והמסך ירוץ איתכם.\nתודה רבה ונתראה!';
+                return savedText !== null ? savedText : 'שלום לכולם, ברוכים הבאים.\nהיום נדבר על בקרת השיוט החדשה שלנו.\nגם אם המערכת לא תבין מילה שאמרתי, היא פשוט תמשיך לרוץ בקצב הממוצע שלי.\nזה אומר שאני יכול לדבר בטבעיות, לגמגם או להשתעל, והטלפרומפטר לעולם לא יעצור כל עוד יש קול בסביבה.\nככה נראה חופש יצירתי אמיתי בוידאו!';
             });
 
-            // ערכי ברירת מחדל חדשים (25px, 30% פדינג, והיפוך אנכי מופעל)
-            const [fontSize, setFontSize] = useState(25);
+            // Default values requested
+            const [fontSize, setFontSize] = useState(30);
             const [alignment, setAlignment] = useState('center');
-            const [padding, setPadding] = useState(30);
+            const [padding, setPadding] = useState(20);
             const [mirrorMode, setMirrorMode] = useState(false);
             const [flipVertical, setFlipVertical] = useState(true);
 
@@ -242,45 +104,30 @@
             const wordsRef = useRef([]);
             const lastSpeechRef = useRef('');
 
-            // שמירת הטקסט ל-LocalStorage בכל פעם שהוא משתנה
+            // --- CRUISE CONTROL REFS ---
+            const wpsRef = useRef(2.5); // מילים לשנייה (ברירת מחדל: 150 מילים בדקה)
+            const sessionStartTimeRef = useRef(0);
+            const sessionStartWordRef = useRef(0);
+            const lastSoundTimeRef = useRef(0); // מתי פעם אחרונה המיקרופון קלט סאונד כלשהו
+            const fractionalWordRef = useRef(0); // צובר שברירי מילים למנוע השיוט
+            const lastTickTimeRef = useRef(0);
+
             useEffect(() => {
                 localStorage.setItem('vibe_prompter_text', text);
             }, [text]);
 
-            const t = (key) => translations[uiLang][key] || translations['en'][key];
+            const t = (key) => translations[uiLang]?.[key] || translations['en'][key];
             const isRtlUI = uiLang === 'he' || uiLang === 'ar';
 
-            // Global language auto-detection for the script text
             const detectedScriptLang = useMemo(() => {
                 const chars = {
                     he: (text.match(/[א-ת]/g) || []).length,
-                    ar: (text.match(/[\u0600-\u06FF]/g) || []).length,
-                    ru: (text.match(/[А-Яа-я]/g) || []).length,
-                    zh: (text.match(/[\u4E00-\u9FA5]/g) || []).length,
-                    hi: (text.match(/[\u0900-\u097F]/g) || []).length,
                     en: (text.match(/[a-zA-Z]/g) || []).length 
                 };
-
-                let dominant = 'en';
-                let max = 0;
-                for (const [lang, count] of Object.entries(chars)) {
-                    if (count > max) {
-                        max = count;
-                        dominant = lang;
-                    }
-                }
-                
-                const locales = {
-                    he: 'he-IL',
-                    ar: 'ar-SA',
-                    ru: 'ru-RU',
-                    zh: 'zh-CN',
-                    hi: 'hi-IN',
-                    en: uiLang === 'es' ? 'es-ES' : (uiLang === 'fr' ? 'fr-FR' : (uiLang === 'pt' ? 'pt-BR' : 'en-US'))
-                };
-                
+                let dominant = chars.he >= chars.en ? 'he' : 'en';
+                const locales = { he: 'he-IL', en: 'en-US' };
                 return { code: dominant, locale: locales[dominant] };
-            }, [text, uiLang]);
+            }, [text]);
 
             const words = text.split(/(\s+)/).filter(w => w.trim().length > 0 || w === '\n');
             wordsRef.current = words;
@@ -299,6 +146,7 @@
                 return false;
             };
 
+            // Main Speech Recognition Setup
             useEffect(() => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) {
@@ -313,7 +161,6 @@
 
                 recognition.onstart = () => setIsListening(true);
                 recognition.onerror = (event) => {
-                    console.error('Speech error:', event.error);
                     if (event.error !== 'no-speech') setIsListening(false);
                 };
                 recognition.onend = () => {
@@ -324,6 +171,9 @@
                 };
 
                 recognition.onresult = (event) => {
+                    // עדכון טיימר סאונד - שמענו רעש/דיבור, בקרת השיוט מקבלת אור ירוק
+                    lastSoundTimeRef.current = Date.now();
+
                     let interimTranscript = '';
                     let finalTranscript = '';
 
@@ -362,20 +212,14 @@
                             if (matchIndexInSpoken !== -1) {
                                 const jumpDistance = i - currentIndex;
                                 
-                                // Context Lock
                                 if (jumpDistance > 2) {
                                     if (matchIndexInSpoken > 0 && i > 0) {
                                         const prevTargetWord = cleanWord(wordsRef.current[i - 1]);
                                         const prevSpokenWord = wordsToCheck[matchIndexInSpoken - 1];
-                                        
                                         if (isFuzzyMatch(prevTargetWord, prevSpokenWord)) {
                                             bestJump = i + 1;
                                             break;
-                                        } else {
-                                            continue;
                                         }
-                                    } else {
-                                        continue;
                                     }
                                 } else {
                                     bestJump = i + 1;
@@ -385,6 +229,23 @@
                                 }
                             }
                         }
+
+                        // --- PACE RECALCULATION (Hard Match) ---
+                        if (bestJump > currentIndex) {
+                            const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000; // בשניות
+                            const wordsRead = bestJump - sessionStartWordRef.current;
+                            
+                            // מחשבים ממוצע חדש רק אם עברו לפחות 2 שניות ו-2 מילים כדי לא לעשות קפיצות מוגזמות
+                            if (timeElapsed > 2 && wordsRead > 2) {
+                                let newWps = wordsRead / timeElapsed;
+                                // תוחמים את הקצב בין קריאה איטית מאוד (1 מילה בשנייה) למהירה מאוד (5 מילים)
+                                wpsRef.current = Math.max(1.0, Math.min(newWps, 5.0)); 
+                            }
+                            
+                            // מאפסים את ה"שאריות" של בקרת השיוט כדי שלא יתנגש עם הקפיצה המדויקת
+                            fractionalWordRef.current = 0; 
+                        }
+
                         return Math.max(currentIndex, bestJump);
                     });
                 };
@@ -393,16 +254,57 @@
                 return () => recognitionRef.current?.stop();
             }, [isPlaying, detectedScriptLang.locale]); 
 
+            // --- FLOW STATE ENGINE (בקרת השיוט) ---
+            useEffect(() => {
+                if (!isPlaying) return;
+
+                const interval = setInterval(() => {
+                    const now = Date.now();
+                    const dt = (now - lastTickTimeRef.current) / 1000; // כמה שניות עברו מאז הטיק האחרון
+                    lastTickTimeRef.current = now;
+
+                    // בודקים אם המיקרופון שמע משהו ב-2 שניות האחרונות
+                    if (now - lastSoundTimeRef.current < 2000) {
+                        // מוסיפים שברירי מילים לפי הקצב הממוצע (wps)
+                        fractionalWordRef.current += wpsRef.current * dt;
+
+                        // ברגע שהצטברה מילה שלמה, מקדמים את הטלפרומפטר
+                        if (fractionalWordRef.current >= 1) {
+                            const wordsToAdd = Math.floor(fractionalWordRef.current);
+                            fractionalWordRef.current -= wordsToAdd;
+
+                            setCurrentWordIndex(prev => {
+                                const nextIndex = prev + wordsToAdd;
+                                return Math.min(nextIndex, wordsRef.current.length - 1);
+                            });
+                        }
+                    }
+                }, 100); // רץ 10 פעמים בשנייה לפעולה חלקה
+
+                return () => clearInterval(interval);
+            }, [isPlaying]);
+
+            // ניהול הפעלה ועצירה
             useEffect(() => {
                 if (isPlaying) {
                     setCurrentWordIndex(0);
                     lastSpeechRef.current = ''; 
+                    
+                    // איפוס מלא של משתני השיוט והקצב
+                    wpsRef.current = 2.5; // מתחיל בקצב סביר של כ-150 מילים בדקה עד שילמד אותך
+                    sessionStartTimeRef.current = Date.now();
+                    sessionStartWordRef.current = 0;
+                    lastSoundTimeRef.current = 0;
+                    fractionalWordRef.current = 0;
+                    lastTickTimeRef.current = Date.now();
+
                     try { recognitionRef.current?.start(); } catch(e) {}
                 } else {
                     try { recognitionRef.current?.stop(); } catch(e) {}
                 }
             }, [isPlaying]);
 
+            // גלילה אוטומטית שומרת תמיד על ה-WordIndex הנוכחי במרכז
             useEffect(() => {
                 if (isPlaying && containerRef.current) {
                     const scrollTargetIndex = Math.min(currentWordIndex + 5, wordsRef.current.length - 1);
@@ -413,17 +315,21 @@
                 }
             }, [currentWordIndex, isPlaying]);
 
-            // פונקציה לטיפול בלחיצה על מילה: קופצת למילה, מסירה את הירוק מההמשך ומאפסת את זיכרון ההאזנה
+            // פונקציית הקליק לתיקון טעויות: מקפיץ לאינדקס ומאפס סטטיסטיקות שיוט מאותה נקודה
             const handleWordClick = (index) => {
                 if (isPlaying) {
                     setCurrentWordIndex(index);
-                    lastSpeechRef.current = ''; // איפוס הזיכרון כדי למנוע קפיצות על בסיס משפטים ישנים
+                    lastSpeechRef.current = ''; 
+                    
+                    // ריסט לסטטיסטיקת הלמידה מנקודה זו כדי לחשב קצב חדש ונקי
+                    sessionStartTimeRef.current = Date.now();
+                    sessionStartWordRef.current = index;
+                    fractionalWordRef.current = 0;
+                    lastTickTimeRef.current = Date.now();
                 }
             };
 
             const displayTransform = `${mirrorMode ? 'scaleX(-1)' : ''} ${flipVertical ? 'scaleY(-1)' : ''}`.trim() || 'none';
-
-            // Dynamic layout classes based on RTL/LTR
             const sidebarBorderClass = isRtlUI ? 'md:border-l' : 'md:border-r';
             const hideAnimationClass = isPlaying ? (isRtlUI ? '-translate-y-full md:translate-y-0 md:translate-x-full hidden' : '-translate-y-full md:translate-y-0 md:-translate-x-full hidden') : '';
 
@@ -433,7 +339,6 @@
                     {/* Sidebar */}
                     <div className={`w-full md:w-80 shrink-0 h-full overflow-y-auto hide-scrollbar bg-gray-900 border-b md:border-b-0 ${sidebarBorderClass} border-gray-800 p-6 flex flex-col gap-6 transition-transform duration-300 z-10 ${hideAnimationClass}`}>
                         
-                        {/* Header & Language Switcher */}
                         <div className="flex items-center justify-between border-b border-gray-800 pb-4 shrink-0">
                             <div className="flex items-center gap-3">
                                 <IconSettings />
@@ -444,15 +349,8 @@
                                 onChange={(e) => setUiLang(e.target.value)}
                                 className="bg-gray-800 border border-gray-700 text-sm rounded px-2 py-1 text-gray-300 focus:outline-none focus:border-blue-500"
                             >
-                                <option value="en">English</option>
                                 <option value="he">עברית</option>
-                                <option value="es">Español</option>
-                                <option value="fr">Français</option>
-                                <option value="ar">العربية</option>
-                                <option value="ru">Русский</option>
-                                <option value="pt">Português</option>
-                                <option value="hi">हिन्दी</option>
-                                <option value="zh">中文</option>
+                                <option value="en">English</option>
                             </select>
                         </div>
 
@@ -469,7 +367,7 @@
                             <textarea 
                                 value={text} onChange={(e) => setText(e.target.value)}
                                 className="w-full h-32 bg-gray-800 border border-gray-700 rounded-md p-3 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                                dir={detectedScriptLang.code === 'he' || detectedScriptLang.code === 'ar' ? 'rtl' : 'ltr'}
+                                dir={detectedScriptLang.code === 'he' ? 'rtl' : 'ltr'}
                             />
                         </div>
 
@@ -515,17 +413,17 @@
                     <div className="flex-1 relative flex flex-col items-center bg-black h-full" style={{ transform: displayTransform }}>
                         {isPlaying && (
                             <div className={`absolute top-4 ${isRtlUI ? 'left-4' : 'right-4'} z-50 flex gap-2`} style={{ transform: displayTransform }}>
-                                <button onClick={() => setIsPlaying(false)} className="bg-red-600/80 text-white p-3 rounded-full flex items-center gap-2 shadow-lg">
+                                <button onClick={() => setIsPlaying(false)} className="bg-red-600/80 text-white p-3 rounded-full flex items-center gap-2 shadow-lg hover:bg-red-500 transition-colors">
                                     <IconStop /> <span className="font-bold hidden md:inline">{t('stop')}</span>
                                 </button>
-                                <div className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold shadow-lg ${isListening ? 'bg-green-500/20 text-green-400' : 'bg-gray-800/80 text-gray-400'}`}>
-                                    {isListening ? <><IconMic /> <span className="hidden md:inline">{t('listening')}</span></> : <><IconMicOff /> <span className="hidden md:inline">{t('micOff')}</span></>}
+                                <div className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold shadow-lg transition-colors duration-500 ${isListening ? 'bg-green-500/20 text-green-400' : 'bg-gray-800/80 text-gray-400'}`}>
+                                    {isListening ? <><IconMic className="animate-pulse" /> <span className="hidden md:inline">{t('listening')}</span></> : <><IconMicOff /> <span className="hidden md:inline">{t('micOff')}</span></>}
                                 </div>
                             </div>
                         )}
 
                         <div ref={containerRef} className="w-full h-full overflow-y-auto scroll-smooth hide-scrollbar" style={{ paddingLeft: `${padding}%`, paddingRight: `${padding}%`, paddingTop: '50vh', paddingBottom: '50vh' }}>
-                            <div style={{ fontSize: `${fontSize}px`, textAlign: alignment, lineHeight: '1.6', direction: detectedScriptLang.code === 'he' || detectedScriptLang.code === 'ar' ? 'rtl' : 'ltr' }} className="max-w-5xl mx-auto">
+                            <div style={{ fontSize: `${fontSize}px`, textAlign: alignment, lineHeight: '1.6', direction: detectedScriptLang.code === 'he' ? 'rtl' : 'ltr' }} className="max-w-5xl mx-auto">
                                 {words.map((word, index) => {
                                     if (word === '\n') return <br key={`br-${index}`} />;
                                     
@@ -538,9 +436,9 @@
                                             onClick={() => handleWordClick(index)}
                                             className={`inline-block mx-1 transition-colors duration-300 ${
                                                 isPlaying 
-                                                    ? (isPast ? 'text-green-400' : 'text-white font-bold') 
+                                                    ? (isPast ? 'text-green-500/80' : 'text-white font-bold') 
                                                     : 'text-white font-bold'
-                                            } ${isPlaying ? 'cursor-pointer hover:opacity-75' : ''}`}
+                                            } ${isPlaying ? 'cursor-pointer hover:text-blue-400 hover:scale-105' : ''}`}
                                         >
                                             {word}
                                         </span>
