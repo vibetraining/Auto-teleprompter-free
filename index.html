@@ -66,7 +66,6 @@
                 error: "הדפדפן לא תומך בזיהוי דיבור. השתמש ב-Chrome או Safari.",
                 uiLang: "שפת ממשק"
             },
-            // ... (keeping translation keys for other languages to keep it lean in view)
             es: { appTitle: "Vibe Prompter", enterText: "Ingrese texto:", detected: "Detectado:", fontSize: "Tamaño de fuente", padding: "Márgenes", align: "Alineación", right: "Derecha", center: "Centro", left: "Izquierda", physical: "Teleprompter Físico", flipH: "Voltear Horizontal", flipV: "Voltear Vertical", start: "Empezar a leer", stop: "Detener", listening: "Escuchando...", micOff: "Micro apagado", error: "Use Chrome o Safari.", uiLang: "Idioma" },
             fr: { appTitle: "Vibe Prompter", enterText: "Entrez le texte :", detected: "Détecté :", fontSize: "Taille", padding: "Marges", align: "Alignement", right: "Droite", center: "Centre", left: "Gauche", physical: "Téléprompteur", flipH: "Miroir H", flipV: "Miroir V", start: "Commencer", stop: "Arrêter", listening: "Écoute...", micOff: "Micro off", error: "Utilisez Chrome.", uiLang: "Langue" }
         };
@@ -111,6 +110,15 @@
             const lastSoundTimeRef = useRef(0); // מתי פעם אחרונה המיקרופון קלט סאונד כלשהו
             const fractionalWordRef = useRef(0); // צובר שברירי מילים למנוע השיוט
             const lastTickTimeRef = useRef(0);
+
+            // --- HARDWARE / JOYSTICK REFS ---
+            const wordIndexRef = useRef(0);
+            const scrollIntervalRef = useRef(null);
+
+            // עדכון ה-Ref כדי למנוע Stale State כשהמיקרופון (או לחיצה קודמת) עדכנו את המיקום
+            useEffect(() => {
+                wordIndexRef.current = currentWordIndex;
+            }, [currentWordIndex]);
 
             useEffect(() => {
                 localStorage.setItem('vibe_prompter_text', text);
@@ -322,35 +330,70 @@
             const handleWordClick = (index) => jumpToWord(index);
 
             // --- JOYSTICK / KEYBOARD INTEGRATION ---
+            // המנגנון החכם שמאפשר החזקה רציפה לגלגול חלק על המסך
             useEffect(() => {
+                const startScrolling = (direction, step = 1) => {
+                    // אם כבר גוללים מהחזקת כפתור, לא נתחיל שוב כדי למנוע כפילויות
+                    if (scrollIntervalRef.current) return; 
+
+                    // ביצוע קפיצה ראשונית מיידית כדי שהתגובה תרגיש חדה
+                    let newIndex = wordIndexRef.current + (direction * step);
+                    newIndex = Math.max(0, Math.min(wordsRef.current.length - 1, newIndex));
+                    wordIndexRef.current = newIndex;
+                    jumpToWord(newIndex);
+
+                    // הפעלת לולאת גלילה רציפה - עוקף את מגבלות הרינדור של דפדפנים
+                    scrollIntervalRef.current = setInterval(() => {
+                        let nextIndex = wordIndexRef.current + (direction * step);
+                        nextIndex = Math.max(0, Math.min(wordsRef.current.length - 1, nextIndex));
+                        
+                        if (nextIndex !== wordIndexRef.current) {
+                            wordIndexRef.current = nextIndex;
+                            jumpToWord(nextIndex);
+                        }
+                    }, 80); // מהירות גלילה רציפה - כ-12 מילים בשנייה (הרבה יותר נעים לעין מגלילת שורות)
+                };
+
+                const stopScrolling = () => {
+                    if (scrollIntervalRef.current) {
+                        clearInterval(scrollIntervalRef.current);
+                        scrollIntervalRef.current = null;
+                    }
+                };
+
                 const handleKeyDown = (e) => {
                     if (!isPlaying) return;
                     
-                    let newIndex = currentWordIndex;
-                    
-                    // תמיכה בחיצי הג'ויסטיק הסטנדרטיים של בלוטות'
                     if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-                        e.preventDefault(); // מונע מהדפדפן לגלול את כל העמוד פיזית
-                        newIndex = Math.max(0, currentWordIndex - 1);
+                        e.preventDefault(); // חוסם את גלילת חלון הדפדפן עצמו
+                        startScrolling(-1, 1);
                     } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
                         e.preventDefault();
-                        newIndex = Math.min(wordsRef.current.length - 1, currentWordIndex + 1);
+                        startScrolling(1, 1);
                     } else if (e.key === 'PageUp') {
                         e.preventDefault();
-                        newIndex = Math.max(0, currentWordIndex - 10); // קפיצה גדולה למעלה
+                        startScrolling(-1, 10); // קפיצה גדולה למעלה
                     } else if (e.key === 'PageDown') {
                         e.preventDefault();
-                        newIndex = Math.min(wordsRef.current.length - 1, currentWordIndex + 10); // קפיצה גדולה למטה
+                        startScrolling(1, 10); // קפיצה גדולה למטה
                     }
+                };
 
-                    if (newIndex !== currentWordIndex) {
-                        jumpToWord(newIndex);
+                const handleKeyUp = (e) => {
+                    if (['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'PageUp', 'PageDown'].includes(e.key)) {
+                        stopScrolling();
                     }
                 };
 
                 window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [isPlaying, currentWordIndex, jumpToWord, wordsRef]);
+                window.addEventListener('keyup', handleKeyUp);
+                
+                return () => {
+                    window.removeEventListener('keydown', handleKeyDown);
+                    window.removeEventListener('keyup', handleKeyUp);
+                    stopScrolling();
+                };
+            }, [isPlaying, jumpToWord]);
 
             // גלילה אוטומטית שומרת תמיד על ה-WordIndex הנוכחי במרכז המסך
             useEffect(() => {
