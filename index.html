@@ -104,21 +104,16 @@
             const lastSpeechRef = useRef('');
 
             // --- CRUISE CONTROL REFS ---
-            const wpsRef = useRef(2.5); // מילים לשנייה (ברירת מחדל: 150 מילים בדקה)
+            const wpsRef = useRef(2.5); 
             const sessionStartTimeRef = useRef(0);
             const sessionStartWordRef = useRef(0);
-            const lastSoundTimeRef = useRef(0); // מתי פעם אחרונה המיקרופון קלט סאונד כלשהו
-            const fractionalWordRef = useRef(0); // צובר שברירי מילים למנוע השיוט
+            const lastSoundTimeRef = useRef(0); 
+            const fractionalWordRef = useRef(0); 
             const lastTickTimeRef = useRef(0);
 
             // --- HARDWARE / JOYSTICK REFS ---
-            const wordIndexRef = useRef(0);
             const scrollIntervalRef = useRef(null);
-
-            // עדכון ה-Ref כדי למנוע Stale State כשהמיקרופון (או לחיצה קודמת) עדכנו את המיקום
-            useEffect(() => {
-                wordIndexRef.current = currentWordIndex;
-            }, [currentWordIndex]);
+            const activeKeyRef = useRef(null); // זוכר איזה מקש מוחזק עכשיו כדי למנוע כפילויות
 
             useEffect(() => {
                 localStorage.setItem('vibe_prompter_text', text);
@@ -179,7 +174,6 @@
                 };
 
                 recognition.onresult = (event) => {
-                    // עדכון טיימר סאונד - שמענו רעש/דיבור, בקרת השיוט מקבלת אור ירוק
                     lastSoundTimeRef.current = Date.now();
 
                     let interimTranscript = '';
@@ -238,19 +232,14 @@
                             }
                         }
 
-                        // --- PACE RECALCULATION (Hard Match) ---
                         if (bestJump > currentIndex) {
-                            const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000; // בשניות
+                            const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000; 
                             const wordsRead = bestJump - sessionStartWordRef.current;
                             
-                            // מחשבים ממוצע חדש רק אם עברו לפחות 2 שניות ו-2 מילים כדי לא לעשות קפיצות מוגזמות
                             if (timeElapsed > 2 && wordsRead > 2) {
                                 let newWps = wordsRead / timeElapsed;
-                                // תוחמים את הקצב בין קריאה איטית מאוד (1 מילה בשנייה) למהירה מאוד (5 מילים)
                                 wpsRef.current = Math.max(1.0, Math.min(newWps, 5.0)); 
                             }
-                            
-                            // מאפסים את ה"שאריות" של בקרת השיוט כדי שלא יתנגש עם הקפיצה המדויקת
                             fractionalWordRef.current = 0; 
                         }
 
@@ -262,44 +251,37 @@
                 return () => recognitionRef.current?.stop();
             }, [isPlaying, detectedScriptLang.locale]); 
 
-            // --- FLOW STATE ENGINE (בקרת השיוט) ---
+            // --- FLOW STATE ENGINE (Cruise Control) ---
             useEffect(() => {
                 if (!isPlaying) return;
 
                 const interval = setInterval(() => {
                     const now = Date.now();
-                    const dt = (now - lastTickTimeRef.current) / 1000; // כמה שניות עברו מאז הטיק האחרון
+                    const dt = (now - lastTickTimeRef.current) / 1000; 
                     lastTickTimeRef.current = now;
 
-                    // בודקים אם המיקרופון שמע משהו ב-2 שניות האחרונות
                     if (now - lastSoundTimeRef.current < 2000) {
-                        // מוסיפים שברירי מילים לפי הקצב הממוצע (wps)
                         fractionalWordRef.current += wpsRef.current * dt;
 
-                        // ברגע שהצטברה מילה שלמה, מקדמים את הטלפרומפטר
                         if (fractionalWordRef.current >= 1) {
                             const wordsToAdd = Math.floor(fractionalWordRef.current);
                             fractionalWordRef.current -= wordsToAdd;
 
-                            setCurrentWordIndex(prev => {
-                                const nextIndex = prev + wordsToAdd;
-                                return Math.min(nextIndex, wordsRef.current.length - 1);
-                            });
+                            setCurrentWordIndex(prev => Math.min(prev + wordsToAdd, wordsRef.current.length - 1));
                         }
                     }
-                }, 100); // רץ 10 פעמים בשנייה לפעולה חלקה
+                }, 100); 
 
                 return () => clearInterval(interval);
             }, [isPlaying]);
 
-            // ניהול הפעלה ועצירה
+            // Play/Stop Management
             useEffect(() => {
                 if (isPlaying) {
                     setCurrentWordIndex(0);
                     lastSpeechRef.current = ''; 
                     
-                    // איפוס מלא של משתני השיוט והקצב
-                    wpsRef.current = 2.5; // מתחיל בקצב סביר של כ-150 מילים בדקה עד שילמד אותך
+                    wpsRef.current = 2.5; 
                     sessionStartTimeRef.current = Date.now();
                     sessionStartWordRef.current = 0;
                     lastSoundTimeRef.current = 0;
@@ -312,76 +294,66 @@
                 }
             }, [isPlaying]);
 
-            // פונקציית הקפיצה המרכזית (לשימוש בלחיצה או עם הג'ויסטיק)
-            const jumpToWord = useCallback((index) => {
-                if (isPlaying) {
-                    setCurrentWordIndex(index);
-                    lastSpeechRef.current = ''; 
-                    
-                    // ריסט לסטטיסטיקת הלמידה מנקודה זו כדי לחשב קצב חדש ונקי
-                    sessionStartTimeRef.current = Date.now();
-                    sessionStartWordRef.current = index;
-                    fractionalWordRef.current = 0;
-                    lastTickTimeRef.current = Date.now();
-                }
-            }, [isPlaying]);
-
-            // פונקציית הקליק לעכבר
-            const handleWordClick = (index) => jumpToWord(index);
-
-            // --- JOYSTICK / KEYBOARD INTEGRATION ---
-            // המנגנון החכם שמאפשר החזקה רציפה לגלגול חלק על המסך
+            // --- JOYSTICK / KEYBOARD INTEGRATION (Functional Updates) ---
             useEffect(() => {
-                const startScrolling = (direction, step = 1) => {
-                    // אם כבר גוללים מהחזקת כפתור, לא נתחיל שוב כדי למנוע כפילויות
-                    if (scrollIntervalRef.current) return; 
+                // מנוע קפיצה פנימי שרץ על סטייט פונקציונלי עמיד לתקלות
+                const executeJump = (key) => {
+                    let step = 0;
+                    if (key === 'ArrowUp' || key === 'ArrowLeft') step = -1;
+                    else if (key === 'ArrowDown' || key === 'ArrowRight') step = 1;
+                    else if (key === 'PageUp') step = -10;
+                    else if (key === 'PageDown') step = 10;
 
-                    // ביצוע קפיצה ראשונית מיידית כדי שהתגובה תרגיש חדה
-                    let newIndex = wordIndexRef.current + (direction * step);
-                    newIndex = Math.max(0, Math.min(wordsRef.current.length - 1, newIndex));
-                    wordIndexRef.current = newIndex;
-                    jumpToWord(newIndex);
-
-                    // הפעלת לולאת גלילה רציפה - עוקף את מגבלות הרינדור של דפדפנים
-                    scrollIntervalRef.current = setInterval(() => {
-                        let nextIndex = wordIndexRef.current + (direction * step);
-                        nextIndex = Math.max(0, Math.min(wordsRef.current.length - 1, nextIndex));
-                        
-                        if (nextIndex !== wordIndexRef.current) {
-                            wordIndexRef.current = nextIndex;
-                            jumpToWord(nextIndex);
-                        }
-                    }, 80); // מהירות גלילה רציפה - כ-12 מילים בשנייה (הרבה יותר נעים לעין מגלילת שורות)
-                };
-
-                const stopScrolling = () => {
-                    if (scrollIntervalRef.current) {
-                        clearInterval(scrollIntervalRef.current);
-                        scrollIntervalRef.current = null;
+                    if (step !== 0) {
+                        setCurrentWordIndex(prev => {
+                            const nextIndex = Math.max(0, Math.min(wordsRef.current.length - 1, prev + step));
+                            
+                            // איפוס סנכרון השיוט כדי שיתחיל מהמילה החדשה בצורה חלקה
+                            sessionStartTimeRef.current = Date.now();
+                            sessionStartWordRef.current = nextIndex;
+                            fractionalWordRef.current = 0;
+                            lastTickTimeRef.current = Date.now();
+                            lastSpeechRef.current = '';
+                            
+                            return nextIndex;
+                        });
                     }
                 };
 
                 const handleKeyDown = (e) => {
                     if (!isPlaying) return;
                     
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-                        e.preventDefault(); // חוסם את גלילת חלון הדפדפן עצמו
-                        startScrolling(-1, 1);
-                    } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        startScrolling(1, 1);
-                    } else if (e.key === 'PageUp') {
-                        e.preventDefault();
-                        startScrolling(-1, 10); // קפיצה גדולה למעלה
-                    } else if (e.key === 'PageDown') {
-                        e.preventDefault();
-                        startScrolling(1, 10); // קפיצה גדולה למטה
+                    const validKeys = ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'PageUp', 'PageDown'];
+                    if (validKeys.includes(e.key)) {
+                        e.preventDefault(); // מונע קפיצת דפדפן רגילה
+                        
+                        // אם זה לחיצה חדשה (ולא הפצצה אוטומטית של מערכת ההפעלה)
+                        if (activeKeyRef.current !== e.key) {
+                            activeKeyRef.current = e.key;
+                            
+                            // קפיצה אחת מיידית לתגובתיות חדה
+                            executeJump(e.key); 
+                            
+                            // מנקה את התור הקודם
+                            if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
+                            
+                            // מייצר "זרם" מדומה של לחיצות כל 90 מילישניות שמריץ את הפוקוס לאורך המילים
+                            scrollIntervalRef.current = setInterval(() => {
+                                if (activeKeyRef.current) {
+                                    executeJump(activeKeyRef.current);
+                                }
+                            }, 90); 
+                        }
                     }
                 };
 
                 const handleKeyUp = (e) => {
-                    if (['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'PageUp', 'PageDown'].includes(e.key)) {
-                        stopScrolling();
+                    if (activeKeyRef.current === e.key) {
+                        activeKeyRef.current = null; // משחרר את הנעילה
+                        if (scrollIntervalRef.current) {
+                            clearInterval(scrollIntervalRef.current);
+                            scrollIntervalRef.current = null;
+                        }
                     }
                 };
 
@@ -391,14 +363,25 @@
                 return () => {
                     window.removeEventListener('keydown', handleKeyDown);
                     window.removeEventListener('keyup', handleKeyUp);
-                    stopScrolling();
+                    if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
                 };
-            }, [isPlaying, jumpToWord]);
+            }, [isPlaying]);
+
+            // פונקציית הקליק לעכבר (משתמשת גם היא באותו איפוס סינמטי)
+            const handleWordClick = (index) => {
+                if (isPlaying) {
+                    setCurrentWordIndex(index);
+                    lastSpeechRef.current = ''; 
+                    sessionStartTimeRef.current = Date.now();
+                    sessionStartWordRef.current = index;
+                    fractionalWordRef.current = 0;
+                    lastTickTimeRef.current = Date.now();
+                }
+            };
 
             // גלילה אוטומטית שומרת תמיד על ה-WordIndex הנוכחי במרכז המסך
             useEffect(() => {
                 if (isPlaying && containerRef.current) {
-                    // כשאנחנו בבקרת שיוט או ג'ויסטיק אנחנו תמיד רוצים את המילה הבאה במרכז המסך
                     const scrollTargetIndex = Math.min(currentWordIndex + 5, wordsRef.current.length - 1);
                     const activeElement = document.getElementById(`word-${scrollTargetIndex}`);
                     if (activeElement) {
