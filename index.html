@@ -1,523 +1,1788 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe Prompter - Global</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Babel for in-browser JSX compilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Vibe Prompter: a free, private, voice-controlled teleprompter that follows your pace. One HTML file, no install, no account.">
+    <meta name="theme-color" content="#030712">
+    <title>Vibe Prompter</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z'/%3E%3Cpath d='M19 10v2a7 7 0 0 1-14 0v-2'/%3E%3Cline x1='12' y1='19' x2='12' y2='22'/%3E%3C/svg%3E">
     <style>
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        body { margin: 0; background-color: #030712; } /* gray-950 */
+        :root {
+            --bg: #030712;
+            --panel: #0b1220;
+            --panel-2: #111827;
+            --panel-3: #1f2937;
+            --border: #1f2937;
+            --text: #f3f4f6;
+            --muted: #9ca3af;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --accent-2: #6366f1;
+            --danger: #dc2626;
+            --ok: #4ade80;
+            --past: rgba(74, 222, 128, 0.72);
+
+            /* Prompter settings (updated from JS) */
+            --font-size: 30px;
+            --line-height: 1.6;
+            --side: 20%;
+            --eyeline: 40%;
+            --flip: none;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Hebrew", "Noto Sans Arabic", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button, input, select, textarea { font: inherit; color: inherit; }
+        button { cursor: pointer; }
+        [hidden] { display: none !important; }
+
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
+
+        :focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+        .app { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+
+        /* ---------- Settings panel ---------- */
+        .panel {
+            width: 340px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            background: var(--panel);
+            border-inline-end: 1px solid var(--border);
+            padding: 20px 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--panel-3) transparent;
+        }
+
+        .panel-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding-bottom: 14px; border-bottom: 1px solid var(--border);
+        }
+        .brand { display: flex; align-items: center; gap: 10px; color: var(--accent); }
+        .brand h1 { margin: 0; font-size: 19px; font-weight: 700; color: var(--text); }
+
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .field-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .label { font-size: 13px; font-weight: 600; color: var(--muted); }
+        output, .value { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 600; color: #d1d5db;
+            background: var(--panel-3); border-radius: 6px; padding: 3px 7px;
+            white-space: nowrap;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            resize: vertical;
+            background: var(--panel-2);
+            border: 1px solid var(--panel-3);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        textarea:focus, .select:focus { outline: none; border-color: var(--accent); }
+
+        .select {
+            width: 100%;
+            background: var(--panel-2);
+            border: 1px solid var(--panel-3);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+        .select-sm { width: auto; padding: 4px 8px; font-size: 13px; }
+
+        input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+
+        .seg { display: flex; gap: 6px; }
+        .seg button {
+            flex: 1;
+            padding: 8px 6px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: var(--panel-3);
+            font-size: 13px;
+            font-weight: 500;
+            transition: background-color .15s;
+        }
+        .seg button:hover:not(:disabled) { background: #374151; }
+        .seg button[aria-pressed="true"], .seg button[aria-checked="true"] { background: var(--accent); color: #fff; }
+        .seg.toggles button[aria-pressed="true"] { background: var(--accent-2); }
+        .seg button:disabled { opacity: .45; cursor: not-allowed; }
+
+        .notice {
+            background: rgba(127, 29, 29, .45);
+            border: 1px solid rgba(248, 113, 113, .35);
+            color: #fca5a5;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        details.shortcuts { font-size: 13px; color: var(--muted); }
+        details.shortcuts summary { cursor: pointer; font-weight: 600; }
+        details.shortcuts dl {
+            display: grid; grid-template-columns: auto 1fr; gap: 6px 12px;
+            margin: 10px 0 0; align-items: center;
+        }
+        details.shortcuts dd { margin: 0; }
+        kbd {
+            display: inline-block; min-width: 1.6em; text-align: center;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+            background: var(--panel-3); border: 1px solid #374151; border-bottom-width: 2px;
+            border-radius: 4px; padding: 1px 5px; color: #e5e7eb;
+        }
+
+        .actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }
+        .btn-primary {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 15px; border: 0; border-radius: 10px;
+            background: var(--accent); color: #fff; font-size: 16px; font-weight: 700;
+            box-shadow: 0 10px 24px -12px rgba(59, 130, 246, .8);
+            transition: background-color .15s;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-ghost {
+            border: 0; background: none; color: var(--muted); font-size: 13px; padding: 4px;
+            text-decoration: underline; text-underline-offset: 3px;
+        }
+        .btn-ghost:hover { color: var(--text); }
+
+        /* ---------- Prompter stage ---------- */
+        .stage { flex: 1; position: relative; min-width: 0; background: #000; overflow: hidden; }
+        .display { position: absolute; inset: 0; }
+        body.playing .display { transform: var(--flip); }
+
+        .scroller {
+            position: relative; /* offsetParent for word measurement */
+            height: 100%;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .scroller::-webkit-scrollbar { display: none; }
+        body.playing .scroller { overflow: hidden; }
+
+        .script-view {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 100vh var(--side);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            font-weight: 700;
+            overflow-wrap: anywhere;
+            will-change: transform;
+        }
+        .script-view .line { min-height: calc(var(--font-size) * var(--line-height)); }
+
+        .w { border-radius: .12em; transition: color .3s; cursor: pointer; }
+        .w:hover { color: #93c5fd; }
+        .w.past { color: var(--past); }
+        .w.cur {
+            text-decoration: underline;
+            text-decoration-color: var(--accent);
+            text-decoration-thickness: max(3px, .1em);
+            text-underline-offset: .22em;
+        }
+
+        .eyeline {
+            position: absolute; left: 0; right: 0; top: var(--eyeline);
+            height: 3px; transform: translateY(-50%);
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, .28) 20%, rgba(59, 130, 246, .28) 80%, transparent);
+            pointer-events: none;
+        }
+        .eyeline::before, .eyeline::after {
+            content: ""; position: absolute; top: 50%; transform: translateY(-50%);
+            border: 9px solid transparent;
+        }
+        .eyeline::before { left: 0; border-left-color: rgba(59, 130, 246, .7); }
+        .eyeline::after { right: 0; border-right-color: rgba(59, 130, 246, .7); }
+
+        .empty-state {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            color: #4b5563; font-size: 18px; padding: 24px; text-align: center; pointer-events: none;
+        }
+
+        /* HUD (never mirrored, so the operator can always read it) */
+        .hud {
+            position: absolute; top: 12px; inset-inline-end: 12px; z-index: 5;
+            display: none; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px;
+            max-width: calc(100% - 24px);
+            transition: opacity .35s;
+        }
+        body.playing .hud { display: flex; }
+        body.hud-idle .hud { opacity: 0; pointer-events: none; }
+        body.hud-idle .stage { cursor: none; }
+
+        .hud-btn, .hud-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            height: 42px; padding: 0 14px; border: 0; border-radius: 999px;
+            background: rgba(31, 41, 55, .85); color: #e5e7eb;
+            font-size: 14px; font-weight: 600;
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .8);
+        }
+        .hud-btn:hover { background: rgba(55, 65, 81, .95); }
+        .hud-btn.danger { background: rgba(220, 38, 38, .85); color: #fff; }
+        .hud-btn.danger:hover { background: #ef4444; }
+        .hud-btn.icon { width: 42px; padding: 0; justify-content: center; }
+        .hud-pill { padding: 0 6px; gap: 2px; }
+        .hud-pill button {
+            width: 30px; height: 30px; border: 0; border-radius: 999px; background: transparent;
+            font-size: 18px; font-weight: 700; line-height: 1;
+        }
+        .hud-pill button:hover { background: rgba(255, 255, 255, .1); }
+        .hud-pill .value { color: #e5e7eb; min-width: 64px; text-align: center; font-size: 13px; }
+        .hud-time { font-variant-numeric: tabular-nums; font-weight: 500; }
+        .mic { transition: background-color .4s, color .4s; }
+        .mic.on { background: rgba(34, 197, 94, .2); color: var(--ok); }
+        .mic.on svg { animation: pulse 1.6s ease-in-out infinite; }
+        @keyframes pulse { 50% { opacity: .45; } }
+
+        .progress {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 4;
+            background: rgba(255, 255, 255, .06); display: none;
+        }
+        body.playing .progress { display: block; }
+        .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .3s linear; }
+        [dir="rtl"] .progress > div { margin-inline-start: 0; }
+
+        .status-badge {
+            position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 5;
+            background: rgba(31, 41, 55, .9); color: #fff; font-weight: 700; font-size: 15px;
+            padding: 10px 18px; border-radius: 999px; pointer-events: none;
+        }
+
+        .toast {
+            position: absolute; left: 50%; top: 70px; transform: translateX(-50%); z-index: 6;
+            width: min(520px, calc(100% - 32px));
+            background: rgba(127, 29, 29, .92); color: #fee2e2; font-size: 14px; line-height: 1.45;
+            border-radius: 10px; padding: 12px 16px; box-shadow: 0 10px 30px -10px #000;
+        }
+
+        /* ---------- Mobile ---------- */
+        @media (max-width: 768px) {
+            .app { flex-direction: column; }
+            .panel { width: 100%; max-height: 58%; border-inline-end: 0; border-bottom: 1px solid var(--border); padding: 16px; }
+            textarea { min-height: 120px; }
+            .actions { position: sticky; bottom: -16px; background: var(--panel); padding: 10px 0 16px; margin-bottom: -16px; }
+            .stage { min-height: 42%; }
+            .hud-label { display: none; }
+        }
+
+        body.playing .panel { display: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .w, .progress > div, .hud { transition: none; }
+            .mic.on svg { animation: none; }
+        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+<noscript><p style="padding:24px;color:#fff">Vibe Prompter needs JavaScript enabled.</p></noscript>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+<div class="app" id="app">
+    <!-- ================= Settings panel ================= -->
+    <aside class="panel" id="panel">
+        <header class="panel-head">
+            <div class="brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                <h1 data-i18n="appTitle">Vibe Prompter</h1>
+            </div>
+            <label class="sr-only" for="uiLang" data-i18n="uiLang">Interface language</label>
+            <select id="uiLang" class="select select-sm">
+                <option value="en">English</option>
+                <option value="he">עברית</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+            </select>
+        </header>
 
-        // --- Translations Dictionary ---
-        const translations = {
-            en: {
-                appTitle: "Vibe Prompter",
-                enterText: "Enter text:",
-                detected: "Detected:",
-                fontSize: "Font Size",
-                padding: "Padding",
-                align: "Text Alignment",
-                right: "Right",
-                center: "Center",
-                left: "Left",
-                physical: "Physical Prompter",
-                flipH: "Flip Horizontal",
-                flipV: "Flip Vertical",
-                start: "Start Reading",
-                stop: "Stop",
-                listening: "Listening...",
-                micOff: "Mic Off",
-                error: "Browser doesn't support speech recognition. Use Chrome or Safari.",
-                uiLang: "UI Language"
-            },
-            he: {
-                appTitle: "Vibe Prompter",
-                enterText: "הזן טקסט:",
-                detected: "זוהה:",
-                fontSize: "גודל טקסט",
-                padding: "שוליים",
-                align: "יישור טקסט",
-                right: "ימין",
-                center: "מרכז",
-                left: "שמאל",
-                physical: "טלפרומפטר פיזי",
-                flipH: "היפוך אופקי",
-                flipV: "היפוך אנכי",
-                start: "התחל קריאה",
-                stop: "עצור",
-                listening: "שיוט פעיל...",
-                micOff: "כבוי",
-                error: "הדפדפן לא תומך בזיהוי דיבור. השתמש ב-Chrome או Safari.",
-                uiLang: "שפת ממשק"
-            },
-            es: { appTitle: "Vibe Prompter", enterText: "Ingrese texto:", detected: "Detectado:", fontSize: "Tamaño de fuente", padding: "Márgenes", align: "Alineación", right: "Derecha", center: "Centro", left: "Izquierda", physical: "Teleprompter Físico", flipH: "Voltear Horizontal", flipV: "Voltear Vertical", start: "Empezar a leer", stop: "Detener", listening: "Escuchando...", micOff: "Micro apagado", error: "Use Chrome o Safari.", uiLang: "Idioma" },
-            fr: { appTitle: "Vibe Prompter", enterText: "Entrez le texte :", detected: "Détecté :", fontSize: "Taille", padding: "Marges", align: "Alignement", right: "Droite", center: "Centre", left: "Gauche", physical: "Téléprompteur", flipH: "Miroir H", flipV: "Miroir V", start: "Commencer", stop: "Arrêter", listening: "Écoute...", micOff: "Micro off", error: "Utilisez Chrome.", uiLang: "Langue" }
-        };
+        <div id="notice" class="notice" role="alert" hidden></div>
 
-        // Icons
-        const IconSettings = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
-        const IconPlay = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
-        const IconStop = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>;
-        const IconMic = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>;
-        const IconMicOff = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path><path d="M5 10v2a7 7 0 0 0 12 5"></path><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path><path d="M9 9v3a3 3 0 0 0 5.12 2.12"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>;
-        const IconGlobe = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+        <section class="field">
+            <div class="field-row">
+                <label class="label" for="script" data-i18n="script">Your script</label>
+                <span class="badge" id="detectedBadge"></span>
+            </div>
+            <textarea id="script" dir="auto" spellcheck="false"></textarea>
+            <p class="hint" id="scriptStats"></p>
+        </section>
 
-        function App() {
-            const [uiLang, setUiLang] = useState('he');
-            
-            const [text, setText] = useState(() => {
-                const savedText = localStorage.getItem('vibe_prompter_text');
-                return savedText !== null ? savedText : 'שלום לכולם, ברוכים הבאים.\nהיום נדבר על בקרת השיוט החדשה שלנו.\nגם אם המערכת לא תבין מילה שאמרתי, היא פשוט תמשיך לרוץ בקצב הממוצע שלי.\nזה אומר שאני יכול לדבר בטבעיות, לגמגם או להשתעל, והטלפרומפטר לעולם לא יעצור כל עוד יש קול בסביבה.\nככה נראה חופש יצירתי אמיתי בוידאו!';
-            });
+        <section class="field">
+            <span class="label" id="modeLabel" data-i18n="mode">Scroll mode</span>
+            <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+                <button type="button" role="radio" data-mode="voice" data-i18n="modeVoice">Voice follow</button>
+                <button type="button" role="radio" data-mode="auto" data-i18n="modeAuto">Auto-scroll</button>
+            </div>
+            <p class="hint" id="modeHint"></p>
+        </section>
 
-            // Default values requested
-            const [fontSize, setFontSize] = useState(30);
-            const [alignment, setAlignment] = useState('center');
-            const [padding, setPadding] = useState(20);
-            const [mirrorMode, setMirrorMode] = useState(false);
-            const [flipVertical, setFlipVertical] = useState(true);
+        <section class="field" id="speechLangField">
+            <label class="label" for="speechLang" data-i18n="speechLang">Speech language</label>
+            <select id="speechLang" class="select"></select>
+        </section>
 
-            const [isPlaying, setIsPlaying] = useState(false);
-            const [isListening, setIsListening] = useState(false);
-            const [currentWordIndex, setCurrentWordIndex] = useState(0);
-            const [supportError, setSupportError] = useState('');
-            
-            const containerRef = useRef(null);
-            const recognitionRef = useRef(null);
-            const wordsRef = useRef([]);
-            const lastSpeechRef = useRef('');
+        <section class="field">
+            <div class="field-row"><label class="label" for="wpm" data-i18n="speed">Speed</label><output id="wpmOut" for="wpm"></output></div>
+            <input type="range" id="wpm" min="60" max="260" step="5">
+        </section>
 
-            // --- CRUISE CONTROL REFS ---
-            const wpsRef = useRef(2.5); 
-            const sessionStartTimeRef = useRef(0);
-            const sessionStartWordRef = useRef(0);
-            const lastSoundTimeRef = useRef(0); 
-            const fractionalWordRef = useRef(0); 
-            const lastTickTimeRef = useRef(0);
+        <section class="field">
+            <div class="field-row"><label class="label" for="fontSize" data-i18n="fontSize">Font size</label><output id="fontSizeOut" for="fontSize"></output></div>
+            <input type="range" id="fontSize" min="20" max="120" step="1">
+        </section>
 
-            // --- HARDWARE / JOYSTICK REFS ---
-            const scrollIntervalRef = useRef(null);
-            const activeKeyRef = useRef(null); // זוכר איזה מקש מוחזק עכשיו כדי למנוע כפילויות
+        <section class="field">
+            <div class="field-row"><label class="label" for="lineHeight" data-i18n="lineHeight">Line spacing</label><output id="lineHeightOut" for="lineHeight"></output></div>
+            <input type="range" id="lineHeight" min="1.1" max="2.4" step="0.1">
+        </section>
 
-            useEffect(() => {
-                localStorage.setItem('vibe_prompter_text', text);
-            }, [text]);
+        <section class="field">
+            <div class="field-row"><label class="label" for="padding" data-i18n="padding">Side margins</label><output id="paddingOut" for="padding"></output></div>
+            <input type="range" id="padding" min="0" max="40" step="1">
+        </section>
 
-            const t = (key) => translations[uiLang]?.[key] || translations['en'][key];
-            const isRtlUI = uiLang === 'he' || uiLang === 'ar';
+        <section class="field">
+            <div class="field-row"><label class="label" for="eyeline" data-i18n="eyeline">Eye-line position</label><output id="eyelineOut" for="eyeline"></output></div>
+            <input type="range" id="eyeline" min="15" max="70" step="1">
+        </section>
 
-            const detectedScriptLang = useMemo(() => {
-                const chars = {
-                    he: (text.match(/[א-ת]/g) || []).length,
-                    en: (text.match(/[a-zA-Z]/g) || []).length 
-                };
-                let dominant = chars.he >= chars.en ? 'he' : 'en';
-                const locales = { he: 'he-IL', en: 'en-US' };
-                return { code: dominant, locale: locales[dominant] };
-            }, [text]);
+        <section class="field">
+            <span class="label" id="alignLabel" data-i18n="align">Text alignment</span>
+            <div class="seg" role="radiogroup" aria-labelledby="alignLabel">
+                <button type="button" role="radio" data-align="left" data-i18n="left">Left</button>
+                <button type="button" role="radio" data-align="center" data-i18n="center">Center</button>
+                <button type="button" role="radio" data-align="right" data-i18n="right">Right</button>
+            </div>
+        </section>
 
-            const words = text.split(/(\s+)/).filter(w => w.trim().length > 0 || w === '\n');
-            wordsRef.current = words;
+        <section class="field">
+            <span class="label" data-i18n="physical">Physical prompter</span>
+            <div class="seg toggles">
+                <button type="button" id="mirrorBtn" aria-pressed="false" data-i18n="flipH">Mirror horizontally</button>
+                <button type="button" id="flipVBtn" aria-pressed="false" data-i18n="flipV">Flip vertically</button>
+            </div>
+            <p class="hint" data-i18n="physicalHint"></p>
+        </section>
 
-            const cleanWord = (word) => {
-                if (!word) return '';
-                return word.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase().trim();
-            };
+        <details class="shortcuts">
+            <summary data-i18n="shortcuts">Keyboard &amp; remote shortcuts</summary>
+            <dl>
+                <dt><kbd>Space</kbd></dt><dd data-i18n="scSpace"></dd>
+                <dt><kbd>Esc</kbd></dt><dd data-i18n="scEsc"></dd>
+                <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd data-i18n="scArrows"></dd>
+                <dt><kbd>PgUp</kbd> <kbd>PgDn</kbd></dt><dd data-i18n="scPage"></dd>
+                <dt><kbd>Home</kbd></dt><dd data-i18n="scHome"></dd>
+                <dt><kbd>−</kbd> <kbd>+</kbd></dt><dd data-i18n="scSpeed"></dd>
+                <dt><kbd>F</kbd></dt><dd data-i18n="scFull"></dd>
+                <dt>🖱️</dt><dd data-i18n="scClick"></dd>
+            </dl>
+        </details>
 
-            const isFuzzyMatch = (w1, w2) => {
-                if (!w1 || !w2) return false;
-                if (w1 === w2) return true;
-                if (w1.length >= 3 && w2.length >= 3) {
-                    if (w1.includes(w2) || w2.includes(w1)) return true;
-                }
-                return false;
-            };
+        <div class="actions">
+            <button type="button" id="startBtn" class="btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                <span id="startLabel"></span>
+            </button>
+            <button type="button" id="toTopBtn" class="btn-ghost" data-i18n="toTop" hidden>Back to top</button>
+        </div>
+    </aside>
 
-            // Main Speech Recognition Setup
-            useEffect(() => {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) {
-                    setSupportError(t('error'));
-                    return;
-                }
+    <!-- ================= Prompter stage ================= -->
+    <main class="stage" id="stage">
+        <div class="display" id="display">
+            <div class="scroller" id="scroller">
+                <div class="script-view" id="scriptView"></div>
+            </div>
+            <div class="eyeline" aria-hidden="true"></div>
+        </div>
+        <div class="empty-state" id="emptyState" data-i18n="emptyScript" hidden></div>
 
-                const recognition = new SpeechRecognition();
-                recognition.lang = detectedScriptLang.locale;
-                recognition.continuous = true;
-                recognition.interimResults = true;
+        <div class="hud" id="hud">
+            <button type="button" class="hud-btn danger" id="stopBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                <span class="hud-label" data-i18n="stop">Stop</span>
+            </button>
+            <button type="button" class="hud-btn" id="pauseBtn">
+                <svg id="pauseIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg>
+                <svg id="playIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                <span class="hud-label" id="pauseLabel"></span>
+            </button>
+            <div class="hud-pill" role="group">
+                <button type="button" id="slowerBtn">−</button>
+                <span class="value" id="wpmReadout" aria-live="off"></span>
+                <button type="button" id="fasterBtn">+</button>
+            </div>
+            <div class="hud-pill mic" id="micChip" style="padding: 0 14px; gap: 6px;">
+                <svg id="micOnIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                <svg id="micOffIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                <span class="hud-label" id="micLabel"></span>
+            </div>
+            <div class="hud-pill hud-time" id="timeReadout" dir="ltr" style="padding: 0 14px;"></div>
+            <button type="button" class="hud-btn icon" id="fsBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+            </button>
+        </div>
 
-                recognition.onstart = () => setIsListening(true);
-                recognition.onerror = (event) => {
-                    if (event.error !== 'no-speech') setIsListening(false);
-                };
-                recognition.onend = () => {
-                    setIsListening(false);
-                    if (isPlaying) {
-                        try { setTimeout(() => recognition.start(), 300); } catch (e) {}
-                    }
-                };
+        <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+        <div class="status-badge" id="statusBadge" role="status" hidden></div>
+        <div class="toast" id="toast" role="alert" hidden></div>
+    </main>
+</div>
 
-                recognition.onresult = (event) => {
-                    lastSoundTimeRef.current = Date.now();
+<script>
+(() => {
+    'use strict';
 
-                    let interimTranscript = '';
-                    let finalTranscript = '';
+    // =====================================================================
+    //  Translations
+    // =====================================================================
+    const I18N = {
+        en: {
+            appTitle: 'Vibe Prompter',
+            uiLang: 'Interface language',
+            script: 'Your script',
+            detected: 'Detected: {lang}',
+            stats: '{words} words · ~{min} min at {wpm} wpm',
+            mode: 'Scroll mode',
+            modeVoice: 'Voice follow',
+            modeAuto: 'Auto-scroll',
+            modeVoiceHint: 'Listens to you and follows your pace. Keeps cruising through words it misses, and waits when you stop talking.',
+            modeAutoHint: 'Scrolls at a constant speed. Works in every browser, no microphone needed.',
+            speechLang: 'Speech language',
+            autoDetect: 'Auto: {lang}',
+            speed: 'Speed',
+            wpmUnit: 'wpm',
+            fontSize: 'Font size',
+            lineHeight: 'Line spacing',
+            padding: 'Side margins',
+            eyeline: 'Eye-line position',
+            align: 'Text alignment',
+            left: 'Left',
+            center: 'Center',
+            right: 'Right',
+            physical: 'Physical prompter (beam-splitter glass)',
+            physicalHint: 'Flips apply while reading, so the editor stays readable.',
+            flipH: 'Mirror horizontally',
+            flipV: 'Flip vertically',
+            start: 'Start reading',
+            startFrom: 'Start from word {n}',
+            toTop: 'Back to the top',
+            stop: 'Stop',
+            pause: 'Pause',
+            resume: 'Resume',
+            paused: 'Paused · Space to resume',
+            end: 'End of script',
+            listening: 'Listening…',
+            micOff: 'Mic off',
+            fullscreen: 'Full screen',
+            slower: 'Slower',
+            faster: 'Faster',
+            errNoSpeech: 'Voice follow isn’t supported in this browser. Use Chrome, Edge or Safari, or switch to Auto-scroll.',
+            errMic: 'Microphone access was blocked. Allow the microphone in your browser’s site settings, or use Auto-scroll.',
+            errNoMic: 'No microphone was found. Connect one, or use Auto-scroll.',
+            errNetwork: 'The speech service is unreachable (offline?). Cruise control keeps scrolling at your pace.',
+            errLang: 'This browser can’t recognize {lang}. Pick another speech language, or use Auto-scroll.',
+            emptyScript: 'Paste or type your script to begin.',
+            shortcuts: 'Keyboard & remote shortcuts',
+            scSpace: 'Pause / resume',
+            scEsc: 'Stop and return to the editor',
+            scArrows: 'One word back / forward (hold to keep moving)',
+            scPage: 'Jump 10 words',
+            scHome: 'Back to the start',
+            scSpeed: 'Slower / faster',
+            scFull: 'Full screen',
+            scClick: 'Click a word to jump there (also sets the start point)'
+        },
+        he: {
+            appTitle: 'Vibe Prompter',
+            uiLang: 'שפת ממשק',
+            script: 'התסריט שלך',
+            detected: 'זוהה: {lang}',
+            stats: '{words} מילים · כ-{min} דק׳ בקצב {wpm} מילים לדקה',
+            mode: 'מצב גלילה',
+            modeVoice: 'מעקב קולי',
+            modeAuto: 'גלילה אוטומטית',
+            modeVoiceHint: 'מאזין לך ומתאים את עצמו לקצב שלך. ממשיך לשייט גם כשמילה לא מזוהה, ועוצר כשאתה מפסיק לדבר.',
+            modeAutoHint: 'גלילה בקצב קבוע. עובד בכל דפדפן, בלי מיקרופון.',
+            speechLang: 'שפת דיבור',
+            autoDetect: 'אוטומטי: {lang}',
+            speed: 'מהירות',
+            wpmUnit: 'מ׳/דק׳',
+            fontSize: 'גודל טקסט',
+            lineHeight: 'מרווח שורות',
+            padding: 'שוליים',
+            eyeline: 'גובה קו הקריאה',
+            align: 'יישור טקסט',
+            left: 'שמאל',
+            center: 'מרכז',
+            right: 'ימין',
+            physical: 'טלפרומפטר פיזי (זכוכית)',
+            physicalHint: 'ההיפוך פעיל רק בזמן קריאה, כך שהעורך נשאר קריא.',
+            flipH: 'היפוך אופקי',
+            flipV: 'היפוך אנכי',
+            start: 'התחל קריאה',
+            startFrom: 'התחל ממילה {n}',
+            toTop: 'חזרה להתחלה',
+            stop: 'עצור',
+            pause: 'השהה',
+            resume: 'המשך',
+            paused: 'מושהה · רווח להמשך',
+            end: 'סוף התסריט',
+            listening: 'שיוט פעיל...',
+            micOff: 'כבוי',
+            fullscreen: 'מסך מלא',
+            slower: 'לאט יותר',
+            faster: 'מהר יותר',
+            errNoSpeech: 'הדפדפן לא תומך בזיהוי דיבור. השתמש ב-Chrome, Edge או Safari, או עבור לגלילה אוטומטית.',
+            errMic: 'הגישה למיקרופון נחסמה. אפשר גישה למיקרופון בהגדרות האתר בדפדפן, או השתמש בגלילה אוטומטית.',
+            errNoMic: 'לא נמצא מיקרופון. חבר מיקרופון או השתמש בגלילה אוטומטית.',
+            errNetwork: 'שירות זיהוי הדיבור לא זמין (אין חיבור?). בקרת השיוט ממשיכה לגלול בקצב שלך.',
+            errLang: 'הדפדפן לא מזהה דיבור בשפה {lang}. בחר שפת דיבור אחרת, או השתמש בגלילה אוטומטית.',
+            emptyScript: 'הדבק או הקלד את התסריט כדי להתחיל.',
+            shortcuts: 'קיצורי מקלדת ושלט',
+            scSpace: 'השהיה / המשך',
+            scEsc: 'עצירה וחזרה לעורך',
+            scArrows: 'מילה אחורה / קדימה (החזק להמשך תנועה)',
+            scPage: 'קפיצה של 10 מילים',
+            scHome: 'חזרה להתחלה',
+            scSpeed: 'לאט / מהר יותר',
+            scFull: 'מסך מלא',
+            scClick: 'לחיצה על מילה קופצת אליה (וגם קובעת נקודת התחלה)'
+        },
+        es: {
+            appTitle: 'Vibe Prompter',
+            uiLang: 'Idioma de la interfaz',
+            script: 'Tu guion',
+            detected: 'Detectado: {lang}',
+            stats: '{words} palabras · ~{min} min a {wpm} ppm',
+            mode: 'Modo de desplazamiento',
+            modeVoice: 'Seguir la voz',
+            modeAuto: 'Automático',
+            modeVoiceHint: 'Te escucha y sigue tu ritmo. Sigue avanzando si se le escapa una palabra y espera cuando dejas de hablar.',
+            modeAutoHint: 'Se desplaza a velocidad constante. Funciona en cualquier navegador, sin micrófono.',
+            speechLang: 'Idioma de voz',
+            autoDetect: 'Auto: {lang}',
+            speed: 'Velocidad',
+            wpmUnit: 'ppm',
+            fontSize: 'Tamaño de fuente',
+            lineHeight: 'Interlineado',
+            padding: 'Márgenes laterales',
+            eyeline: 'Línea de lectura',
+            align: 'Alineación',
+            left: 'Izquierda',
+            center: 'Centro',
+            right: 'Derecha',
+            physical: 'Teleprompter físico (cristal)',
+            physicalHint: 'Los giros se aplican durante la lectura; el editor sigue siendo legible.',
+            flipH: 'Voltear horizontal',
+            flipV: 'Voltear vertical',
+            start: 'Empezar a leer',
+            startFrom: 'Empezar en la palabra {n}',
+            toTop: 'Volver al inicio',
+            stop: 'Detener',
+            pause: 'Pausa',
+            resume: 'Reanudar',
+            paused: 'En pausa · Espacio para seguir',
+            end: 'Fin del guion',
+            listening: 'Escuchando…',
+            micOff: 'Micro apagado',
+            fullscreen: 'Pantalla completa',
+            slower: 'Más lento',
+            faster: 'Más rápido',
+            errNoSpeech: 'Este navegador no admite reconocimiento de voz. Usa Chrome, Edge o Safari, o cambia a Automático.',
+            errMic: 'Se bloqueó el acceso al micrófono. Permítelo en la configuración del sitio o usa Automático.',
+            errNoMic: 'No se encontró ningún micrófono. Conecta uno o usa Automático.',
+            errNetwork: 'El servicio de voz no está disponible (¿sin conexión?). El control de crucero sigue a tu ritmo.',
+            errLang: 'Este navegador no reconoce {lang}. Elige otro idioma de voz o usa Automático.',
+            emptyScript: 'Pega o escribe tu guion para empezar.',
+            shortcuts: 'Atajos de teclado y control remoto',
+            scSpace: 'Pausa / reanudar',
+            scEsc: 'Detener y volver al editor',
+            scArrows: 'Una palabra atrás / adelante (mantén para seguir)',
+            scPage: 'Saltar 10 palabras',
+            scHome: 'Volver al inicio',
+            scSpeed: 'Más lento / más rápido',
+            scFull: 'Pantalla completa',
+            scClick: 'Haz clic en una palabra para saltar a ella'
+        },
+        fr: {
+            appTitle: 'Vibe Prompter',
+            uiLang: 'Langue de l’interface',
+            script: 'Votre texte',
+            detected: 'Détecté : {lang}',
+            stats: '{words} mots · ~{min} min à {wpm} mots/min',
+            mode: 'Mode de défilement',
+            modeVoice: 'Suivi vocal',
+            modeAuto: 'Automatique',
+            modeVoiceHint: 'Vous écoute et suit votre rythme. Continue même s’il rate un mot, et attend quand vous vous arrêtez.',
+            modeAutoHint: 'Défilement à vitesse constante. Fonctionne dans tous les navigateurs, sans micro.',
+            speechLang: 'Langue parlée',
+            autoDetect: 'Auto : {lang}',
+            speed: 'Vitesse',
+            wpmUnit: 'mots/min',
+            fontSize: 'Taille du texte',
+            lineHeight: 'Interligne',
+            padding: 'Marges latérales',
+            eyeline: 'Ligne de lecture',
+            align: 'Alignement',
+            left: 'Gauche',
+            center: 'Centre',
+            right: 'Droite',
+            physical: 'Téléprompteur physique (vitre)',
+            physicalHint: 'Les miroirs s’appliquent pendant la lecture ; l’éditeur reste lisible.',
+            flipH: 'Miroir horizontal',
+            flipV: 'Miroir vertical',
+            start: 'Commencer',
+            startFrom: 'Commencer au mot {n}',
+            toTop: 'Revenir au début',
+            stop: 'Arrêter',
+            pause: 'Pause',
+            resume: 'Reprendre',
+            paused: 'En pause · Espace pour reprendre',
+            end: 'Fin du texte',
+            listening: 'Écoute…',
+            micOff: 'Micro coupé',
+            fullscreen: 'Plein écran',
+            slower: 'Plus lent',
+            faster: 'Plus rapide',
+            errNoSpeech: 'Ce navigateur ne prend pas en charge la reconnaissance vocale. Utilisez Chrome, Edge ou Safari, ou passez en Automatique.',
+            errMic: 'L’accès au micro est bloqué. Autorisez-le dans les paramètres du site, ou utilisez Automatique.',
+            errNoMic: 'Aucun micro détecté. Branchez-en un, ou utilisez Automatique.',
+            errNetwork: 'Le service vocal est injoignable (hors ligne ?). Le régulateur continue à votre rythme.',
+            errLang: 'Ce navigateur ne reconnaît pas {lang}. Choisissez une autre langue, ou utilisez Automatique.',
+            emptyScript: 'Collez ou tapez votre texte pour commencer.',
+            shortcuts: 'Raccourcis clavier et télécommande',
+            scSpace: 'Pause / reprise',
+            scEsc: 'Arrêter et revenir à l’éditeur',
+            scArrows: 'Un mot en arrière / en avant (maintenir pour avancer)',
+            scPage: 'Sauter 10 mots',
+            scHome: 'Revenir au début',
+            scSpeed: 'Plus lent / plus rapide',
+            scFull: 'Plein écran',
+            scClick: 'Cliquez sur un mot pour y aller'
+        }
+    };
 
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
-                        }
-                    }
+    const SAMPLE_TEXT = {
+        he: 'שלום לכולם, ברוכים הבאים.\nהיום נדבר על בקרת השיוט החדשה שלנו.\nגם אם המערכת לא תבין מילה שאמרתי, היא פשוט תמשיך לרוץ בקצב הממוצע שלי.\nזה אומר שאני יכול לדבר בטבעיות, לגמגם או להשתעל, והטלפרומפטר לעולם לא יעצור כל עוד יש קול בסביבה.\nככה נראה חופש יצירתי אמיתי בוידאו!',
+        en: 'Hi everyone, and welcome.\nToday we are talking about our new cruise control.\nEven if the system misses a word I say, it simply keeps rolling at my average pace.\nThat means I can speak naturally, stumble or even cough, and the prompter never stops as long as there is sound in the room.\nThat is what real creative freedom on video looks like!'
+    };
 
-                    const latestSpeech = (finalTranscript + ' ' + interimTranscript).trim();
-                    if (!latestSpeech || latestSpeech === lastSpeechRef.current) return;
-                    lastSpeechRef.current = latestSpeech;
+    // Speech languages offered for manual override.
+    const SPEECH_LANGS = [
+        'en-US', 'en-GB', 'he-IL', 'ar-SA', 'es-ES', 'es-MX', 'fr-FR', 'de-DE', 'it-IT',
+        'pt-BR', 'pt-PT', 'nl-NL', 'pl-PL', 'ru-RU', 'uk-UA', 'tr-TR', 'el-GR',
+        'hi-IN', 'ja-JP', 'ko-KR', 'zh-CN'
+    ];
 
-                    const spokenWords = latestSpeech.split(/\s+/).map(cleanWord).filter(w => w.length > 0);
-                    if (spokenWords.length === 0) return;
+    // =====================================================================
+    //  Storage & settings
+    // =====================================================================
+    const TEXT_KEY = 'vibe_prompter_text';
+    const SETTINGS_KEY = 'vibe_prompter_settings';
 
-                    const searchWindow = 12; 
-                    const wordsToCheck = spokenWords.slice(-4); 
+    const storage = {
+        get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } },
+        set(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* private mode / quota */ } }
+    };
 
-                    setCurrentWordIndex((currentIndex) => {
-                        let bestJump = currentIndex;
-                        
-                        for (let i = currentIndex; i < Math.min(currentIndex + searchWindow, wordsRef.current.length); i++) {
-                            const targetWord = cleanWord(wordsRef.current[i]);
-                            
-                            let matchIndexInSpoken = -1;
-                            for (let j = wordsToCheck.length - 1; j >= 0; j--) {
-                                if (isFuzzyMatch(targetWord, wordsToCheck[j])) {
-                                    matchIndexInSpoken = j;
-                                    break;
-                                }
-                            }
+    const browserLang = (navigator.language || 'en').slice(0, 2).toLowerCase();
 
-                            if (matchIndexInSpoken !== -1) {
-                                const jumpDistance = i - currentIndex;
-                                
-                                if (jumpDistance > 2) {
-                                    if (matchIndexInSpoken > 0 && i > 0) {
-                                        const prevTargetWord = cleanWord(wordsRef.current[i - 1]);
-                                        const prevSpokenWord = wordsToCheck[matchIndexInSpoken - 1];
-                                        if (isFuzzyMatch(prevTargetWord, prevSpokenWord)) {
-                                            bestJump = i + 1;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    bestJump = i + 1;
-                                    if (matchIndexInSpoken === wordsToCheck.length - 1) {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+    const DEFAULTS = {
+        uiLang: I18N[browserLang] ? browserLang : 'en',
+        mode: 'voice',          // 'voice' | 'auto'
+        speechLang: 'auto',     // 'auto' | BCP-47 locale
+        wpm: 150,               // auto-scroll speed & initial voice cruise pace
+        fontSize: 30,
+        lineHeight: 1.6,
+        padding: 20,            // % side margin
+        eyeline: 40,            // % from top of the reading area
+        align: 'center',
+        mirror: false,
+        flipV: false
+    };
 
-                        if (bestJump > currentIndex) {
-                            const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000; 
-                            const wordsRead = bestJump - sessionStartWordRef.current;
-                            
-                            if (timeElapsed > 2 && wordsRead > 2) {
-                                let newWps = wordsRead / timeElapsed;
-                                wpsRef.current = Math.max(1.0, Math.min(newWps, 5.0)); 
-                            }
-                            fractionalWordRef.current = 0; 
-                        }
+    const settings = loadSettings();
 
-                        return Math.max(currentIndex, bestJump);
-                    });
-                };
+    function loadSettings() {
+        let saved = {};
+        try { saved = JSON.parse(storage.get(SETTINGS_KEY)) || {}; } catch (e) { saved = {}; }
+        const merged = { ...DEFAULTS };
+        for (const key of Object.keys(DEFAULTS)) {
+            if (typeof saved[key] === typeof DEFAULTS[key]) merged[key] = saved[key];
+        }
+        if (!I18N[merged.uiLang]) merged.uiLang = DEFAULTS.uiLang;
+        if (!['voice', 'auto'].includes(merged.mode)) merged.mode = 'voice';
+        if (!['left', 'center', 'right'].includes(merged.align)) merged.align = 'center';
+        return merged;
+    }
 
-                recognitionRef.current = recognition;
-                return () => recognitionRef.current?.stop();
-            }, [isPlaying, detectedScriptLang.locale]); 
+    function saveSettings() {
+        storage.set(SETTINGS_KEY, JSON.stringify(settings));
+    }
 
-            // --- FLOW STATE ENGINE (Cruise Control) ---
-            useEffect(() => {
-                if (!isPlaying) return;
+    // =====================================================================
+    //  i18n helpers
+    // =====================================================================
+    function t(key, vars) {
+        let str = (I18N[settings.uiLang] && I18N[settings.uiLang][key]) ?? I18N.en[key] ?? key;
+        if (vars) for (const [k, v] of Object.entries(vars)) str = str.replaceAll(`{${k}}`, v);
+        return str;
+    }
 
-                const interval = setInterval(() => {
-                    const now = Date.now();
-                    const dt = (now - lastTickTimeRef.current) / 1000; 
-                    lastTickTimeRef.current = now;
+    const displayNameCache = {};
+    function langName(locale) {
+        const cacheKey = settings.uiLang + '|' + locale;
+        if (!(cacheKey in displayNameCache)) {
+            let name = locale;
+            try { name = new Intl.DisplayNames([settings.uiLang], { type: 'language' }).of(locale) || locale; } catch (e) { /* old browser */ }
+            displayNameCache[cacheKey] = name;
+        }
+        return displayNameCache[cacheKey];
+    }
 
-                    if (now - lastSoundTimeRef.current < 2000) {
-                        fractionalWordRef.current += wpsRef.current * dt;
+    // =====================================================================
+    //  Text processing: tokenizing, language detection, fuzzy matching
+    // =====================================================================
 
-                        if (fractionalWordRef.current >= 1) {
-                            const wordsToAdd = Math.floor(fractionalWordRef.current);
-                            fractionalWordRef.current -= wordsToAdd;
+    /** Lowercase, strip diacritics/niqqud and punctuation so "Hello," matches "hello". */
+    function cleanWord(word) {
+        return word
+            .normalize('NFD')
+            .replace(/\p{M}/gu, '')
+            .replace(/[^\p{L}\p{N}]/gu, '')
+            .toLowerCase();
+    }
 
-                            setCurrentWordIndex(prev => Math.min(prev + wordsToAdd, wordsRef.current.length - 1));
-                        }
-                    }
-                }, 100); 
+    /** Splits text into words while remembering which words belong to which line. */
+    function tokenize(text) {
+        const words = [];
+        const lines = [];
+        for (const rawLine of text.replace(/\r\n?/g, '\n').split('\n')) {
+            const line = [];
+            for (const token of rawLine.split(/\s+/)) {
+                if (!token) continue;
+                line.push(words.length);
+                words.push({ text: token, clean: cleanWord(token) });
+            }
+            lines.push(line);
+        }
+        // Trim blank lines at the start and end of the script.
+        while (lines.length && !lines[0].length) lines.shift();
+        while (lines.length && !lines[lines.length - 1].length) lines.pop();
+        return { words, lines };
+    }
 
-                return () => clearInterval(interval);
-            }, [isPlaying]);
+    const SCRIPT_RANGES = [
+        ['he-IL', /[֐-׿]/g],
+        ['ar-SA', /[؀-ۿݐ-ݿ]/g],
+        ['ru-RU', /[Ѐ-ӿ]/g],
+        ['el-GR', /[Ͱ-Ͽ]/g],
+        ['ja-JP', /[぀-ヿ]/g],
+        ['ko-KR', /[가-힯ᄀ-ᇿ]/g],
+        ['zh-CN', /[一-鿿]/g],
+        ['hi-IN', /[ऀ-ॿ]/g],
+        ['latin', /[A-Za-zÀ-ɏ]/g]
+    ];
 
-            // Play/Stop Management
-            useEffect(() => {
-                if (isPlaying) {
-                    setCurrentWordIndex(0);
-                    lastSpeechRef.current = ''; 
-                    
-                    wpsRef.current = 2.5; 
-                    sessionStartTimeRef.current = Date.now();
-                    sessionStartWordRef.current = 0;
-                    lastSoundTimeRef.current = 0;
-                    fractionalWordRef.current = 0;
-                    lastTickTimeRef.current = Date.now();
+    const STOPWORDS = {
+        'en-US': 'the and to of in is that it you for this we with on are be my our have what',
+        'es-ES': 'el la que y en los las un una es por para con se del lo como más pero hoy muy está hay',
+        'fr-FR': 'le la les de des et est un une que qui pour dans pas vous nous ce sur avec au',
+        'de-DE': 'der die das und ist nicht ich sie es ein eine zu mit auf den wir sich auch',
+        'it-IT': 'il di che e la per un una non sono gli le con del è ma questo come',
+        'pt-BR': 'que e do da em um uma para com não os as é você mas são isso hoje',
+        'nl-NL': 'de het een en van is dat niet op te zijn met voor ik je we ook'
+    };
+    const STOPWORD_SETS = Object.fromEntries(
+        Object.entries(STOPWORDS).map(([locale, list]) => [locale, new Set(list.split(' '))])
+    );
 
-                    try { recognitionRef.current?.start(); } catch(e) {}
-                } else {
-                    try { recognitionRef.current?.stop(); } catch(e) {}
-                }
-            }, [isPlaying]);
+    /** Guesses the speech locale and text direction from the characters in the script. */
+    function detectLanguage(text) {
+        const sample = text.slice(0, 5000);
+        const counts = {};
+        for (const [locale, re] of SCRIPT_RANGES) counts[locale] = (sample.match(re) || []).length;
 
-            // --- JOYSTICK / KEYBOARD INTEGRATION (Functional Updates) ---
-            useEffect(() => {
-                // מנוע קפיצה פנימי שרץ על סטייט פונקציונלי עמיד לתקלות
-                const executeJump = (key) => {
-                    let step = 0;
-                    if (key === 'ArrowUp' || key === 'ArrowLeft') step = -1;
-                    else if (key === 'ArrowDown' || key === 'ArrowRight') step = 1;
-                    else if (key === 'PageUp') step = -10;
-                    else if (key === 'PageDown') step = 10;
+        let best = 'latin';
+        for (const locale of Object.keys(counts)) if (counts[locale] > counts[best]) best = locale;
 
-                    if (step !== 0) {
-                        setCurrentWordIndex(prev => {
-                            const nextIndex = Math.max(0, Math.min(wordsRef.current.length - 1, prev + step));
-                            
-                            // איפוס סנכרון השיוט כדי שיתחיל מהמילה החדשה בצורה חלקה
-                            sessionStartTimeRef.current = Date.now();
-                            sessionStartWordRef.current = nextIndex;
-                            fractionalWordRef.current = 0;
-                            lastTickTimeRef.current = Date.now();
-                            lastSpeechRef.current = '';
-                            
-                            return nextIndex;
-                        });
-                    }
-                };
+        // Japanese mixes kanji (Han) with kana; any real amount of kana means Japanese.
+        if (best === 'zh-CN' && counts['ja-JP'] > counts['zh-CN'] * 0.1) best = 'ja-JP';
+        if (best === 'ru-RU' && /[іїєґІЇЄҐ]/.test(sample)) best = 'uk-UA';
 
-                const handleKeyDown = (e) => {
-                    if (!isPlaying) return;
-                    
-                    const validKeys = ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'PageUp', 'PageDown'];
-                    if (validKeys.includes(e.key)) {
-                        e.preventDefault(); // מונע קפיצת דפדפן רגילה
-                        
-                        // אם זה לחיצה חדשה (ולא הפצצה אוטומטית של מערכת ההפעלה)
-                        if (activeKeyRef.current !== e.key) {
-                            activeKeyRef.current = e.key;
-                            
-                            // קפיצה אחת מיידית לתגובתיות חדה
-                            executeJump(e.key); 
-                            
-                            // מנקה את התור הקודם
-                            if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
-                            
-                            // מייצר "זרם" מדומה של לחיצות כל 90 מילישניות שמריץ את הפוקוס לאורך המילים
-                            scrollIntervalRef.current = setInterval(() => {
-                                if (activeKeyRef.current) {
-                                    executeJump(activeKeyRef.current);
-                                }
-                            }, 90); 
-                        }
-                    }
-                };
-
-                const handleKeyUp = (e) => {
-                    if (activeKeyRef.current === e.key) {
-                        activeKeyRef.current = null; // משחרר את הנעילה
-                        if (scrollIntervalRef.current) {
-                            clearInterval(scrollIntervalRef.current);
-                            scrollIntervalRef.current = null;
-                        }
-                    }
-                };
-
-                window.addEventListener('keydown', handleKeyDown);
-                window.addEventListener('keyup', handleKeyUp);
-                
-                return () => {
-                    window.removeEventListener('keydown', handleKeyDown);
-                    window.removeEventListener('keyup', handleKeyUp);
-                    if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
-                };
-            }, [isPlaying]);
-
-            // פונקציית הקליק לעכבר (משתמשת גם היא באותו איפוס סינמטי)
-            const handleWordClick = (index) => {
-                if (isPlaying) {
-                    setCurrentWordIndex(index);
-                    lastSpeechRef.current = ''; 
-                    sessionStartTimeRef.current = Date.now();
-                    sessionStartWordRef.current = index;
-                    fractionalWordRef.current = 0;
-                    lastTickTimeRef.current = Date.now();
-                }
-            };
-
-            // גלילה אוטומטית שומרת תמיד על ה-WordIndex הנוכחי במרכז המסך
-            useEffect(() => {
-                if (isPlaying && containerRef.current) {
-                    const scrollTargetIndex = Math.min(currentWordIndex + 5, wordsRef.current.length - 1);
-                    const activeElement = document.getElementById(`word-${scrollTargetIndex}`);
-                    if (activeElement) {
-                        activeElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-                    }
-                }
-            }, [currentWordIndex, isPlaying]);
-
-            const displayTransform = `${mirrorMode ? 'scaleX(-1)' : ''} ${flipVertical ? 'scaleY(-1)' : ''}`.trim() || 'none';
-            const sidebarBorderClass = isRtlUI ? 'md:border-l' : 'md:border-r';
-            const hideAnimationClass = isPlaying ? (isRtlUI ? '-translate-y-full md:translate-y-0 md:translate-x-full hidden' : '-translate-y-full md:translate-y-0 md:-translate-x-full hidden') : '';
-
-            return (
-                <div className="flex flex-col md:flex-row h-screen bg-gray-950 text-white font-sans overflow-hidden" dir={isRtlUI ? 'rtl' : 'ltr'}>
-                    
-                    {/* Sidebar */}
-                    <div className={`w-full md:w-80 shrink-0 h-full overflow-y-auto hide-scrollbar bg-gray-900 border-b md:border-b-0 ${sidebarBorderClass} border-gray-800 p-6 flex flex-col gap-6 transition-transform duration-300 z-10 ${hideAnimationClass}`}>
-                        
-                        <div className="flex items-center justify-between border-b border-gray-800 pb-4 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <IconSettings />
-                                <h1 className="text-xl font-bold">{t('appTitle')}</h1>
-                            </div>
-                            <select 
-                                value={uiLang} 
-                                onChange={(e) => setUiLang(e.target.value)}
-                                className="bg-gray-800 border border-gray-700 text-sm rounded px-2 py-1 text-gray-300 focus:outline-none focus:border-blue-500"
-                            >
-                                <option value="he">עברית</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
-
-                        {supportError && <div className="bg-red-900/50 text-red-400 p-3 rounded-md text-sm">{supportError}</div>}
-
-                        <div className="flex flex-col gap-2 shrink-0">
-                            <label className="text-sm text-gray-400 font-semibold flex justify-between items-end">
-                                <span>{t('enterText')}</span>
-                                <span className="text-xs flex items-center gap-1 bg-gray-800 px-2 py-1 rounded text-gray-300">
-                                    <IconGlobe />
-                                    {t('detected')} {detectedScriptLang.locale}
-                                </span>
-                            </label>
-                            <textarea 
-                                value={text} onChange={(e) => setText(e.target.value)}
-                                className="w-full h-32 bg-gray-800 border border-gray-700 rounded-md p-3 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                                dir={detectedScriptLang.code === 'he' ? 'rtl' : 'ltr'}
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-2 shrink-0">
-                            <label className="text-sm text-gray-400 font-semibold flex justify-between">
-                                <span>{t('fontSize')}</span><span>{fontSize}px</span>
-                            </label>
-                            <input type="range" min="24" max="100" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-full accent-blue-500"/>
-                        </div>
-
-                        <div className="flex flex-col gap-2 shrink-0">
-                            <label className="text-sm text-gray-400 font-semibold flex justify-between">
-                                <span>{t('padding')}</span><span>{padding}%</span>
-                            </label>
-                            <input type="range" min="0" max="40" value={padding} onChange={(e) => setPadding(Number(e.target.value))} className="w-full accent-blue-500"/>
-                        </div>
-
-                        <div className="flex flex-col gap-2 shrink-0">
-                            <label className="text-sm text-gray-400 font-semibold">{t('align')}</label>
-                            <div className="flex gap-2">
-                                <button onClick={() => setAlignment('right')} className={`flex-1 p-2 rounded text-sm ${alignment === 'right' ? 'bg-blue-600' : 'bg-gray-800'}`}>{t('right')}</button>
-                                <button onClick={() => setAlignment('center')} className={`flex-1 p-2 rounded text-sm ${alignment === 'center' ? 'bg-blue-600' : 'bg-gray-800'}`}>{t('center')}</button>
-                                <button onClick={() => setAlignment('left')} className={`flex-1 p-2 rounded text-sm ${alignment === 'left' ? 'bg-blue-600' : 'bg-gray-800'}`}>{t('left')}</button>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2 shrink-0">
-                            <label className="text-sm text-gray-400 font-semibold">{t('physical')}</label>
-                            <div className="flex gap-2">
-                                <button onClick={() => setMirrorMode(!mirrorMode)} className={`flex-1 p-2 rounded-md text-sm transition-colors ${mirrorMode ? 'bg-indigo-600' : 'bg-gray-800'}`}>{t('flipH')}</button>
-                                <button onClick={() => setFlipVertical(!flipVertical)} className={`flex-1 p-2 rounded-md text-sm transition-colors ${flipVertical ? 'bg-indigo-600' : 'bg-gray-800'}`}>{t('flipV')}</button>
-                            </div>
-                        </div>
-
-                        <div className="mt-auto shrink-0 pt-4 pb-8 md:pb-0">
-                            <button onClick={() => setIsPlaying(true)} disabled={!!supportError} className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 shadow-lg">
-                                <IconPlay /> {t('start')}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Prompter Display Area */}
-                    <div className="flex-1 relative flex flex-col items-center bg-black h-full" style={{ transform: displayTransform }}>
-                        {isPlaying && (
-                            <div className={`absolute top-4 ${isRtlUI ? 'left-4' : 'right-4'} z-50 flex gap-2`} style={{ transform: displayTransform }}>
-                                <button onClick={() => setIsPlaying(false)} className="bg-red-600/80 text-white p-3 rounded-full flex items-center gap-2 shadow-lg hover:bg-red-500 transition-colors">
-                                    <IconStop /> <span className="font-bold hidden md:inline">{t('stop')}</span>
-                                </button>
-                                <div className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold shadow-lg transition-colors duration-500 ${isListening ? 'bg-green-500/20 text-green-400' : 'bg-gray-800/80 text-gray-400'}`}>
-                                    {isListening ? <><IconMic className="animate-pulse" /> <span className="hidden md:inline">{t('listening')}</span></> : <><IconMicOff /> <span className="hidden md:inline">{t('micOff')}</span></>}
-                                </div>
-                            </div>
-                        )}
-
-                        <div ref={containerRef} className="w-full h-full overflow-y-auto scroll-smooth hide-scrollbar" style={{ paddingLeft: `${padding}%`, paddingRight: `${padding}%`, paddingTop: '50vh', paddingBottom: '50vh' }}>
-                            <div style={{ fontSize: `${fontSize}px`, textAlign: alignment, lineHeight: '1.6', direction: detectedScriptLang.code === 'he' ? 'rtl' : 'ltr' }} className="max-w-5xl mx-auto">
-                                {words.map((word, index) => {
-                                    if (word === '\n') return <br key={`br-${index}`} />;
-                                    
-                                    const isPast = index < currentWordIndex;
-                                    const isCurrent = index === currentWordIndex;
-                                    
-                                    return (
-                                        <span 
-                                            key={`word-${index}`} 
-                                            id={`word-${index}`} 
-                                            onClick={() => handleWordClick(index)}
-                                            className={`inline-block mx-1 transition-colors duration-300 ${
-                                                isPlaying 
-                                                    ? (isPast ? 'text-green-500/80' : 'text-white font-bold') 
-                                                    : 'text-white font-bold'
-                                            } ${isCurrent && isPlaying ? 'underline decoration-blue-500 decoration-[4px] underline-offset-[8px]' : ''} ${isPlaying ? 'cursor-pointer hover:text-blue-400 hover:scale-105' : ''}`}
-                                        >
-                                            {word}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                        
-                        {/* Center reading line guide */}
-                        {isPlaying && <div className="absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent pointer-events-none transform -translate-y-1/2"></div>}
-                    </div>
-                </div>
-            );
+        if (best === 'latin') {
+            const tokens = sample.toLowerCase().split(/[^\p{L}]+/u);
+            let topLocale = null;
+            let topScore = 0;
+            for (const [locale, set] of Object.entries(STOPWORD_SETS)) {
+                let score = 0;
+                for (const tok of tokens) if (set.has(tok)) score++;
+                if (score > topScore) { topScore = score; topLocale = locale; }
+            }
+            if (topLocale) {
+                best = topLocale;
+            } else {
+                const nav = navigator.language || 'en-US';
+                best = SPEECH_LANGS.find(l => l === nav) || SPEECH_LANGS.find(l => l.startsWith(nav.slice(0, 2)) && /^(en|es|fr|de|it|pt|nl|pl|tr)/.test(l)) || 'en-US';
+            }
+            // Prefer the user's regional variant (e.g. en-GB, es-MX) when it matches.
+            const nav = navigator.language || '';
+            if (nav.slice(0, 2) === best.slice(0, 2) && /^[a-z]{2}-[A-Z]{2}$/.test(nav)) best = nav;
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        const lang = best.slice(0, 2);
+        return { locale: best, dir: (lang === 'he' || lang === 'ar') ? 'rtl' : 'ltr' };
+    }
+
+    /** Levenshtein distance with an early exit once it exceeds `max`. */
+    function editDistance(a, b, max) {
+        if (Math.abs(a.length - b.length) > max) return max + 1;
+        let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+        for (let i = 1; i <= a.length; i++) {
+            const curr = [i];
+            let rowMin = i;
+            for (let j = 1; j <= b.length; j++) {
+                curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+                if (curr[j] < rowMin) rowMin = curr[j];
+            }
+            if (rowMin > max) return max + 1;
+            prev = curr;
+        }
+        return prev[b.length];
+    }
+
+    /** Tolerant word comparison: handles prefixes (Hebrew ו/ה/ב), plurals and small recognizer typos. */
+    function similar(a, b) {
+        if (!a || !b) return false;
+        if (a === b) return true;
+        const shorter = Math.min(a.length, b.length);
+        const longer = Math.max(a.length, b.length);
+        if (shorter >= 3 && shorter / longer >= 0.5 && (a.includes(b) || b.includes(a))) return true;
+        if (shorter >= 4) return editDistance(a, b, 2) <= (shorter >= 7 ? 2 : 1);
+        return false;
+    }
+
+    // =====================================================================
+    //  DOM references
+    // =====================================================================
+    const $ = (id) => document.getElementById(id);
+    const el = {
+        uiLang: $('uiLang'), notice: $('notice'), script: $('script'), detectedBadge: $('detectedBadge'),
+        scriptStats: $('scriptStats'), modeHint: $('modeHint'), speechLangField: $('speechLangField'),
+        speechLang: $('speechLang'), mirrorBtn: $('mirrorBtn'), flipVBtn: $('flipVBtn'),
+        startBtn: $('startBtn'), startLabel: $('startLabel'), toTopBtn: $('toTopBtn'),
+        stage: $('stage'), scroller: $('scroller'), scriptView: $('scriptView'), emptyState: $('emptyState'),
+        hud: $('hud'), stopBtn: $('stopBtn'), pauseBtn: $('pauseBtn'), pauseLabel: $('pauseLabel'),
+        pauseIcon: $('pauseIcon'), playIcon: $('playIcon'), slowerBtn: $('slowerBtn'), fasterBtn: $('fasterBtn'),
+        wpmReadout: $('wpmReadout'), micChip: $('micChip'), micLabel: $('micLabel'),
+        micOnIcon: $('micOnIcon'), micOffIcon: $('micOffIcon'), timeReadout: $('timeReadout'), fsBtn: $('fsBtn'),
+        progressBar: $('progressBar'), statusBadge: $('statusBadge'), toast: $('toast')
+    };
+
+    // =====================================================================
+    //  Runtime state
+    // =====================================================================
+    const SEARCH_AHEAD = 14;   // how far past the last heard word we look for matches
+    const MAX_LEAD = 5;        // cruise control never runs further than this past the last heard word
+    const SOUND_HOLD_MS = 1500; // keep cruising this long after the last recognized speech
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const voiceSupported = !!SpeechRecognition;
+
+    const state = {
+        words: [],
+        lines: [],
+        wordEls: [],
+        detected: { locale: 'en-US', dir: 'ltr' },
+        idx: 0,             // the next word to be read
+        confirmed: 0,       // position confirmed by speech recognition
+        frac: 0,            // fractional progress towards the next word (cruise control)
+        wps: 2.5,           // live words-per-second estimate
+        paceHistory: [],    // [{ t, i }] confirmed positions for pace estimation
+        lastSoundAt: -Infinity,
+        playing: false,
+        paused: false,
+        atEnd: false,
+        listening: false,
+        elapsed: 0,
+        scrollY: 0,
+        layout: null,
+        layoutDirty: true,
+        lastTick: 0,
+        raf: 0
+    };
+
+    const effectiveMode = () => (voiceSupported ? settings.mode : 'auto');
+    const speechLocale = () => (settings.speechLang === 'auto' ? state.detected.locale : settings.speechLang);
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+    // =====================================================================
+    //  Rendering the script
+    // =====================================================================
+    function renderScript() {
+        const frag = document.createDocumentFragment();
+        const wordEls = new Array(state.words.length);
+        for (const line of state.lines) {
+            const lineEl = document.createElement('div');
+            lineEl.className = 'line';
+            line.forEach((wordIndex, pos) => {
+                if (pos > 0) lineEl.appendChild(document.createTextNode(' '));
+                const span = document.createElement('span');
+                span.className = 'w';
+                span.dataset.i = wordIndex;
+                span.textContent = state.words[wordIndex].text;
+                wordEls[wordIndex] = span;
+                lineEl.appendChild(span);
+            });
+            frag.appendChild(lineEl);
+        }
+        el.scriptView.replaceChildren(frag);
+        el.scriptView.dir = state.detected.dir;
+        el.scriptView.lang = state.detected.locale;
+        state.wordEls = wordEls;
+        state.layoutDirty = true;
+        el.emptyState.hidden = state.words.length > 0;
+        paintAll();
+    }
+
+    function wordClass(i) {
+        if (i < state.idx) return 'w past';
+        if (i === state.idx) return 'w cur';
+        return 'w';
+    }
+
+    function paintAll() {
+        state.wordEls.forEach((span, i) => { span.className = wordClass(i); });
+    }
+
+    function paintRange(from, to) {
+        const lo = Math.max(0, Math.min(from, to));
+        const hi = Math.min(state.wordEls.length - 1, Math.max(from, to));
+        for (let i = lo; i <= hi; i++) state.wordEls[i].className = wordClass(i);
+    }
+
+    /** Measures visual lines (after wrapping) so scrolling can glide smoothly through each line. */
+    function computeLayout() {
+        const lines = [];
+        const wordLine = new Int32Array(state.wordEls.length);
+        let current = null;
+        state.wordEls.forEach((span, i) => {
+            const top = span.offsetTop;
+            const height = span.offsetHeight;
+            if (!current || Math.abs(top - current.top) > height * 0.5) {
+                current = { start: i, end: i, top, height };
+                lines.push(current);
+            } else {
+                current.end = i;
+            }
+            wordLine[i] = lines.length - 1;
+        });
+        const cs = getComputedStyle(el.scriptView);
+        const pitch = parseFloat(cs.fontSize) * settings.lineHeight;
+        state.layout = { lines, wordLine, pitch };
+        state.layoutDirty = false;
+    }
+
+    /** Scroll offset that places (fractional) word position `pos` on the eye-line. */
+    function scrollTargetFor(pos) {
+        if (state.layoutDirty || !state.layout) computeLayout();
+        const { lines, wordLine, pitch } = state.layout;
+        if (!lines.length) return 0;
+        const n = state.wordEls.length;
+        const i = clamp(Math.floor(pos), 0, n - 1);
+        const f = i >= n - 1 ? 0 : clamp(pos - i, 0, 1);
+        const lineIndex = wordLine[i];
+        const line = lines[lineIndex];
+        const next = lines[lineIndex + 1];
+        const step = next ? Math.min(next.top - line.top, pitch) : pitch;
+        const progress = (i - line.start + f) / (line.end - line.start + 1);
+        const center = line.top + line.height / 2 + (progress - 0.5) * step;
+        return center - el.scroller.clientHeight * (settings.eyeline / 100);
+    }
+
+    function positionPreview() {
+        if (state.playing || !state.wordEls.length) return;
+        el.scroller.scrollTop = scrollTargetFor(state.idx);
+    }
+
+    // =====================================================================
+    //  Position management
+    // =====================================================================
+    function setIndex(next, manual = false) {
+        const n = state.words.length;
+        if (!n) return;
+        next = clamp(next, 0, n - 1);
+        const prev = state.idx;
+        state.idx = next;
+        if (manual) {
+            state.confirmed = next;
+            state.frac = 0;
+            state.paceHistory = [];
+            voice.resetTranscript();
+            if (state.atEnd && next < n - 1) setStatus(state.paused ? t('paused') : null);
+            state.atEnd = false;
+        }
+        if (prev !== next) paintRange(prev, next);
+        updateProgress();
+        if (!state.playing) {
+            updateStartButton();
+            positionPreview();
+        }
+    }
+
+    function stepWords(delta) { setIndex(state.idx + delta, true); }
+
+    function stepLines(delta) {
+        if (state.layoutDirty || !state.layout) computeLayout();
+        const { lines, wordLine } = state.layout;
+        if (!lines.length) return;
+        const target = clamp(wordLine[state.idx] + delta, 0, lines.length - 1);
+        setIndex(lines[target].start, true);
+    }
+
+    // =====================================================================
+    //  Speech recognition (voice follow)
+    // =====================================================================
+    const voice = {
+        rec: null,
+        lang: '',
+        wanted: false,
+        restartTimer: 0,
+        restartDelay: 250,
+        lastTranscript: '',
+
+        start(lang) {
+            if (!voiceSupported) return;
+            this.wanted = true;
+            if (!this.rec || this.lang !== lang) {
+                this.dispose();
+                this.rec = this.create(lang);
+                this.lang = lang;
+            }
+            this.resetTranscript();
+            this.tryStart();
+        },
+
+        stop() {
+            this.wanted = false;
+            clearTimeout(this.restartTimer);
+            if (this.rec) { try { this.rec.abort(); } catch (e) { /* not running */ } }
+            setListening(false);
+        },
+
+        dispose() {
+            if (!this.rec) return;
+            const r = this.rec;
+            r.onstart = r.onresult = r.onerror = r.onend = null;
+            try { r.abort(); } catch (e) { /* not running */ }
+            this.rec = null;
+        },
+
+        tryStart() {
+            clearTimeout(this.restartTimer);
+            if (!this.rec || !this.wanted) return;
+            try { this.rec.start(); } catch (e) { /* already started */ }
+        },
+
+        resetTranscript() { this.lastTranscript = ''; },
+
+        create(lang) {
+            const rec = new SpeechRecognition();
+            rec.lang = lang;
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.maxAlternatives = 1;
+
+            rec.onstart = () => { setListening(true); };
+            rec.onresult = (event) => {
+                this.restartDelay = 250;
+                handleSpeech(event);
+            };
+            rec.onerror = (event) => {
+                switch (event.error) {
+                    case 'not-allowed':
+                    case 'service-not-allowed':
+                        this.wanted = false;
+                        showNotice(t('errMic'));
+                        break;
+                    case 'audio-capture':
+                        this.wanted = false;
+                        showNotice(t('errNoMic'));
+                        break;
+                    case 'language-not-supported':
+                        this.wanted = false;
+                        showNotice(t('errLang', { lang: langName(lang) }));
+                        break;
+                    case 'network':
+                        this.restartDelay = Math.min(this.restartDelay * 2, 8000);
+                        showNotice(t('errNetwork'));
+                        break;
+                    default: // 'no-speech', 'aborted': harmless, we just restart
+                        break;
+                }
+            };
+            rec.onend = () => {
+                setListening(false);
+                this.resetTranscript();
+                // Browsers end recognition sessions on silence or after a while; keep it alive.
+                if (this.wanted) this.restartTimer = setTimeout(() => this.tryStart(), this.restartDelay);
+            };
+            return rec;
+        }
+    };
+
+    function handleSpeech(event) {
+        if (!state.playing || state.paused) return;
+        state.lastSoundAt = performance.now();
+
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += ' ' + event.results[i][0].transcript;
+        }
+        transcript = transcript.trim();
+        if (!transcript || transcript === voice.lastTranscript) return;
+        voice.lastTranscript = transcript;
+
+        const spoken = transcript.split(/\s+/).map(cleanWord).filter(Boolean);
+        if (!spoken.length) return;
+
+        const next = matchSpeech(spoken);
+        if (next > state.confirmed) {
+            state.confirmed = next;
+            recordPace(next);
+            if (next > state.idx) {
+                state.frac = 0;
+                setIndex(next);
+            }
+        }
+    }
+
+    /**
+     * Context-lock matching: finds where the speaker is, searching forward from the last
+     * confirmed position. Nearby matches are accepted directly (only against the freshest
+     * spoken words); bigger jumps must also match the preceding word, so a repeated word
+     * or phrase further down the script can't pull the prompter ahead.
+     */
+    function matchSpeech(spoken) {
+        const words = state.words;
+        const tail = spoken.slice(-6);
+        const n = tail.length;
+        const base = state.confirmed;
+        const end = Math.min(words.length, Math.max(state.idx, base) + SEARCH_AHEAD);
+        let best = base;
+
+        for (let i = base; i < end; i++) {
+            const target = words[i].clean;
+            if (!target) continue;
+
+            let j = -1;
+            for (let k = n - 1; k >= 0; k--) {
+                if (similar(target, tail[k])) { j = k; break; }
+            }
+            if (j < 0) continue;
+
+            const gap = i - best;
+            const fresh = j >= n - 3;
+            let context = false;
+            if (j > 0) {
+                let p = i - 1;
+                while (p >= 0 && !words[p].clean) p--;
+                context = p >= 0 && similar(words[p].clean, tail[j - 1]);
+            }
+
+            if ((gap <= 2 && fresh) || (context && (best === base || gap <= 4))) {
+                best = i + 1;
+                if (j === n - 1) break; // matched the newest spoken word: that's where we are
+            }
+        }
+        return Math.min(best, words.length - 1);
+    }
+
+    /** Estimates reading pace from confirmed positions over a sliding window. */
+    function recordPace(index) {
+        const now = performance.now();
+        const hist = state.paceHistory;
+        hist.push({ t: now, i: index });
+        while (hist.length > 2 && now - hist[0].t > 15000) hist.shift();
+        const first = hist[0];
+        const seconds = (now - first.t) / 1000;
+        const words = index - first.i;
+        if (seconds > 2.5 && words > 3) {
+            const measured = clamp(words / seconds, 0.8, 5);
+            state.wps = state.wps * 0.5 + measured * 0.5;
+        }
+    }
+
+    function setListening(on) {
+        state.listening = on;
+        el.micChip.classList.toggle('on', on);
+        // SVG elements have no `hidden` property, so toggle the attribute directly.
+        el.micOnIcon.toggleAttribute('hidden', !on);
+        el.micOffIcon.toggleAttribute('hidden', on);
+        el.micLabel.textContent = on ? t('listening') : t('micOff');
+    }
+
+    // =====================================================================
+    //  Playback engine
+    // =====================================================================
+    function start() {
+        if (!state.words.length) { showNotice(t('emptyScript')); return; }
+        hideNotice();
+        if (state.idx >= state.words.length - 1) setIndex(0, true);
+
+        state.playing = true;
+        state.paused = false;
+        state.atEnd = false;
+        state.frac = 0;
+        state.confirmed = state.idx;
+        state.paceHistory = [];
+        state.elapsed = 0;
+        state.lastSoundAt = -Infinity;
+        state.wps = settings.wpm / 60;
+
+        if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+
+        document.body.classList.add('playing');
+        el.scroller.scrollTop = 0;
+        state.layoutDirty = true;
+        state.scrollY = scrollTargetFor(state.idx);
+        applyScroll();
+
+        setStatus(null);
+        updateHud();
+        if (effectiveMode() === 'voice') voice.start(speechLocale());
+        requestWakeLock();
+        pokeHud();
+
+        state.lastTick = performance.now();
+        cancelAnimationFrame(state.raf);
+        state.raf = requestAnimationFrame(frame);
+    }
+
+    function stop() {
+        if (!state.playing) return;
+        state.playing = false;
+        state.paused = false;
+        voice.stop();
+        cancelAnimationFrame(state.raf);
+        releaseWakeLock();
+        exitFullscreen();
+        clearTimeout(hudTimer);
+        document.body.classList.remove('playing', 'hud-idle');
+        el.scriptView.style.transform = '';
+        setStatus(null);
+        hideToast();
+        if (state.idx >= state.words.length - 1) setIndex(0, true);
+        state.layoutDirty = true;
+        updateStartButton();
+        positionPreview();
+    }
+
+    function pause(reachedEnd = false) {
+        if (!state.playing || state.paused) return;
+        state.paused = true;
+        state.atEnd = reachedEnd;
+        voice.stop();
+        setStatus(reachedEnd ? t('end') : t('paused'));
+        updateHud();
+        pokeHud();
+    }
+
+    function resume() {
+        if (!state.playing || !state.paused) return;
+        if (state.idx >= state.words.length - 1) setIndex(0, true);
+        state.paused = false;
+        state.atEnd = false;
+        state.frac = 0;
+        state.confirmed = Math.max(state.confirmed, state.idx);
+        state.paceHistory = [];
+        state.lastSoundAt = -Infinity;
+        setStatus(null);
+        if (effectiveMode() === 'voice') voice.start(speechLocale());
+        updateHud();
+        pokeHud();
+    }
+
+    function togglePause() { state.paused ? resume() : pause(); }
+
+    function frame(now) {
+        if (!state.playing) return;
+        const dt = Math.min(0.25, Math.max(0, (now - state.lastTick) / 1000));
+        state.lastTick = now;
+        tick(dt, now);
+        state.raf = requestAnimationFrame(frame);
+    }
+
+    let hudRefreshAt = 0;
+    function tick(dt, now) {
+        const n = state.words.length;
+        const mode = effectiveMode();
+
+        if (!state.paused) {
+            state.elapsed += dt;
+
+            // Cruise control: advance at the estimated pace. In voice mode only while speech
+            // is being heard, and never too far ahead of what recognition has confirmed.
+            let advancing = false;
+            if (mode === 'auto') {
+                advancing = true;
+            } else if (now - state.lastSoundAt < SOUND_HOLD_MS && state.idx < state.confirmed + MAX_LEAD) {
+                advancing = true;
+            }
+            if (advancing && state.idx < n - 1) {
+                const rate = mode === 'auto' ? settings.wpm / 60 : state.wps;
+                state.frac += rate * dt;
+                if (state.frac >= 1) {
+                    const whole = Math.floor(state.frac);
+                    state.frac -= whole;
+                    let target = state.idx + whole;
+                    if (mode === 'voice') target = Math.min(target, state.confirmed + MAX_LEAD);
+                    setIndex(target);
+                }
+            }
+            if (mode === 'auto' && state.idx >= n - 1) {
+                state.frac = 0;
+                pause(true);
+            }
+        }
+
+        // Smoothly glide the text towards the target position.
+        const target = scrollTargetFor(state.idx + (state.paused ? 0 : state.frac));
+        const ease = 1 - Math.exp(-dt * 6);
+        state.scrollY += (target - state.scrollY) * ease;
+        if (Math.abs(target - state.scrollY) < 0.05) state.scrollY = target;
+        applyScroll();
+
+        if (now >= hudRefreshAt) {
+            hudRefreshAt = now + 250;
+            updateHud();
+        }
+    }
+
+    function applyScroll() {
+        el.scriptView.style.transform = `translate3d(0, ${(-state.scrollY).toFixed(2)}px, 0)`;
+    }
+
+    function adjustSpeed(delta) {
+        if (effectiveMode() === 'auto') {
+            settings.wpm = clamp(settings.wpm + delta, 40, 400);
+            saveSettings();
+            syncControls();
+        } else {
+            state.wps = clamp(state.wps + delta / 60, 0.8, 6);
+        }
+        updateHud();
+        pokeHud();
+    }
+
+    // =====================================================================
+    //  HUD, status and notices
+    // =====================================================================
+    function formatTime(seconds) {
+        seconds = Math.max(0, Math.round(seconds));
+        const m = Math.floor(seconds / 60);
+        const s = String(seconds % 60).padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function currentWpm() {
+        return Math.round(effectiveMode() === 'auto' ? settings.wpm : state.wps * 60);
+    }
+
+    function updateHud() {
+        const wpm = currentWpm();
+        el.wpmReadout.textContent = `${wpm} ${t('wpmUnit')}`;
+        const remaining = (state.words.length - 1 - state.idx) / Math.max(wpm / 60, 0.1);
+        el.timeReadout.textContent = `${formatTime(state.elapsed)} / −${formatTime(remaining)}`;
+        el.pauseLabel.textContent = state.paused ? t('resume') : t('pause');
+        el.pauseIcon.toggleAttribute('hidden', state.paused);
+        el.playIcon.toggleAttribute('hidden', !state.paused);
+        el.pauseBtn.setAttribute('aria-label', state.paused ? t('resume') : t('pause'));
+        el.micChip.hidden = effectiveMode() !== 'voice';
+    }
+
+    function updateProgress() {
+        const n = state.words.length;
+        el.progressBar.style.width = n > 1 ? `${(state.idx / (n - 1)) * 100}%` : '0%';
+    }
+
+    function setStatus(text) {
+        el.statusBadge.hidden = !text;
+        if (text) el.statusBadge.textContent = text;
+    }
+
+    let toastTimer = 0;
+    function showNotice(text) {
+        el.notice.textContent = text;
+        el.notice.hidden = false;
+        if (state.playing) {
+            el.toast.textContent = text;
+            el.toast.hidden = false;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(hideToast, 7000);
+        }
+    }
+    function hideNotice() {
+        el.notice.hidden = true;
+        refreshSupportNotice();
+    }
+    function hideToast() { el.toast.hidden = true; }
+
+    function refreshSupportNotice() {
+        if (!voiceSupported && settings.mode === 'voice') {
+            el.notice.textContent = t('errNoSpeech');
+            el.notice.hidden = false;
+        }
+    }
+
+    let hudTimer = 0;
+    function pokeHud() {
+        document.body.classList.remove('hud-idle');
+        clearTimeout(hudTimer);
+        if (state.playing && !state.paused) {
+            hudTimer = setTimeout(() => document.body.classList.add('hud-idle'), 2500);
+        }
+    }
+
+    // =====================================================================
+    //  Wake lock & fullscreen
+    // =====================================================================
+    let wakeLock = null;
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator && !wakeLock) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => { wakeLock = null; });
+            }
+        } catch (e) { wakeLock = null; }
+    }
+    function releaseWakeLock() {
+        if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && state.playing) requestWakeLock();
+    });
+
+    const fullscreenSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+    const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+    function toggleFullscreen() {
+        if (!fullscreenSupported) return;
+        if (fullscreenElement()) { exitFullscreen(); return; }
+        const root = document.documentElement;
+        const req = root.requestFullscreen || root.webkitRequestFullscreen;
+        try { const p = req.call(root); if (p && p.catch) p.catch(() => {}); } catch (e) { /* denied */ }
+    }
+    function exitFullscreen() {
+        if (!fullscreenElement()) return;
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        try { const p = exit.call(document); if (p && p.catch) p.catch(() => {}); } catch (e) { /* ignore */ }
+    }
+
+    // =====================================================================
+    //  Settings UI
+    // =====================================================================
+    const RANGE_FORMAT = {
+        wpm: (v) => `${v} ${t('wpmUnit')}`,
+        fontSize: (v) => `${v}px`,
+        lineHeight: (v) => Number(v).toFixed(1),
+        padding: (v) => `${v}%`,
+        eyeline: (v) => `${v}%`
+    };
+
+    function applyVisualSettings() {
+        const root = document.documentElement.style;
+        root.setProperty('--font-size', `${settings.fontSize}px`);
+        root.setProperty('--line-height', String(settings.lineHeight));
+        root.setProperty('--side', `${settings.padding}%`);
+        root.setProperty('--eyeline', `${settings.eyeline}%`);
+        const flips = [settings.mirror ? 'scaleX(-1)' : '', settings.flipV ? 'scaleY(-1)' : ''].join(' ').trim();
+        root.setProperty('--flip', flips || 'none');
+        el.scriptView.style.textAlign = settings.align;
+        state.layoutDirty = true;
+        positionPreview();
+    }
+
+    function syncControls() {
+        for (const key of Object.keys(RANGE_FORMAT)) {
+            const input = $(key);
+            input.value = settings[key];
+            $(key + 'Out').textContent = RANGE_FORMAT[key](settings[key]);
+        }
+        const mode = effectiveMode();
+        document.querySelectorAll('[data-mode]').forEach((b) => {
+            b.setAttribute('aria-checked', String(b.dataset.mode === mode));
+            b.disabled = b.dataset.mode === 'voice' && !voiceSupported;
+        });
+        document.querySelectorAll('[data-align]').forEach((b) => {
+            b.setAttribute('aria-checked', String(b.dataset.align === settings.align));
+        });
+        el.mirrorBtn.setAttribute('aria-pressed', String(settings.mirror));
+        el.flipVBtn.setAttribute('aria-pressed', String(settings.flipV));
+        el.modeHint.textContent = mode === 'voice' ? t('modeVoiceHint') : t('modeAutoHint');
+        el.speechLangField.hidden = mode !== 'voice';
+        el.uiLang.value = settings.uiLang;
+        updateStats();
+        updateHud();
+    }
+
+    function buildSpeechLangOptions() {
+        const options = [['auto', t('autoDetect', { lang: langName(state.detected.locale) })]];
+        const locales = new Set(SPEECH_LANGS);
+        if (settings.speechLang !== 'auto') locales.add(settings.speechLang);
+        const named = [...locales].map((loc) => [loc, langName(loc)]);
+        named.sort((a, b) => a[1].localeCompare(b[1], settings.uiLang));
+        options.push(...named);
+
+        el.speechLang.replaceChildren(...options.map(([value, label]) => {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = label;
+            return opt;
+        }));
+        el.speechLang.value = settings.speechLang;
+    }
+
+    function updateDetected() {
+        el.detectedBadge.textContent = t('detected', { lang: langName(speechLocale()) });
+        const autoOpt = el.speechLang.querySelector('option[value="auto"]');
+        if (autoOpt) autoOpt.textContent = t('autoDetect', { lang: langName(state.detected.locale) });
+    }
+
+    function updateStats() {
+        const count = state.words.length;
+        const min = Math.max(1, Math.round(count / settings.wpm));
+        el.scriptStats.textContent = t('stats', { words: count.toLocaleString(settings.uiLang), min, wpm: settings.wpm });
+    }
+
+    function updateStartButton() {
+        const n = state.words.length;
+        const fromMiddle = state.idx > 0 && state.idx < n - 1;
+        el.startLabel.textContent = fromMiddle ? t('startFrom', { n: state.idx + 1 }) : t('start');
+        el.toTopBtn.hidden = !fromMiddle;
+    }
+
+    function applyLanguage() {
+        const lang = settings.uiLang;
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+        document.querySelectorAll('[data-i18n]').forEach((node) => { node.textContent = t(node.dataset.i18n); });
+        el.slowerBtn.setAttribute('aria-label', t('slower'));
+        el.slowerBtn.title = t('slower');
+        el.fasterBtn.setAttribute('aria-label', t('faster'));
+        el.fasterBtn.title = t('faster');
+        el.fsBtn.setAttribute('aria-label', t('fullscreen'));
+        el.fsBtn.title = `${t('fullscreen')} (F)`;
+        el.stopBtn.title = `${t('stop')} (Esc)`;
+        el.pauseBtn.title = `${t('pause')} / ${t('resume')} (Space)`;
+        el.fsBtn.hidden = !fullscreenSupported;
+        buildSpeechLangOptions();
+        updateDetected();
+        setListening(state.listening);
+        updateStartButton();
+        syncControls();
+        if (!el.notice.hidden || (!voiceSupported && settings.mode === 'voice')) hideNotice();
+        if (state.paused) setStatus(state.atEnd ? t('end') : t('paused'));
+    }
+
+    // =====================================================================
+    //  Script text handling
+    // =====================================================================
+    function onTextChanged(resetPosition) {
+        const text = el.script.value;
+        const { words, lines } = tokenize(text);
+        state.words = words;
+        state.lines = lines;
+        state.detected = detectLanguage(text);
+        if (resetPosition || state.idx >= words.length) state.idx = 0;
+        state.confirmed = state.idx;
+        renderScript();
+        updateDetected();
+        updateStats();
+        updateStartButton();
+        updateProgress();
+        positionPreview();
+    }
+
+    let textTimer = 0;
+    el.script.addEventListener('input', () => {
+        storage.set(TEXT_KEY, el.script.value);
+        clearTimeout(textTimer);
+        textTimer = setTimeout(() => onTextChanged(true), 150);
+    });
+
+    // =====================================================================
+    //  Event wiring
+    // =====================================================================
+    el.uiLang.addEventListener('change', () => {
+        settings.uiLang = el.uiLang.value;
+        saveSettings();
+        applyLanguage();
+    });
+
+    el.speechLang.addEventListener('change', () => {
+        settings.speechLang = el.speechLang.value;
+        saveSettings();
+        updateDetected();
+    });
+
+    for (const key of Object.keys(RANGE_FORMAT)) {
+        $(key).addEventListener('input', (e) => {
+            settings[key] = Number(e.target.value);
+            $(key + 'Out').textContent = RANGE_FORMAT[key](settings[key]);
+            saveSettings();
+            if (key === 'wpm') updateStats();
+            else applyVisualSettings();
+        });
+    }
+
+    document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+        settings.mode = b.dataset.mode;
+        saveSettings();
+        hideNotice();
+        syncControls();
+    }));
+
+    document.querySelectorAll('[data-align]').forEach((b) => b.addEventListener('click', () => {
+        settings.align = b.dataset.align;
+        saveSettings();
+        syncControls();
+        applyVisualSettings();
+    }));
+
+    el.mirrorBtn.addEventListener('click', () => {
+        settings.mirror = !settings.mirror;
+        saveSettings(); syncControls(); applyVisualSettings();
+    });
+    el.flipVBtn.addEventListener('click', () => {
+        settings.flipV = !settings.flipV;
+        saveSettings(); syncControls(); applyVisualSettings();
+    });
+
+    el.startBtn.addEventListener('click', start);
+    el.toTopBtn.addEventListener('click', () => setIndex(0, true));
+    el.stopBtn.addEventListener('click', stop);
+    el.pauseBtn.addEventListener('click', togglePause);
+    el.slowerBtn.addEventListener('click', () => adjustSpeed(-10));
+    el.fasterBtn.addEventListener('click', () => adjustSpeed(10));
+    el.fsBtn.addEventListener('click', toggleFullscreen);
+
+    // Click/tap a word to jump there (sets the start point when not playing).
+    el.scriptView.addEventListener('click', (e) => {
+        const span = e.target.closest('.w');
+        if (span) setIndex(Number(span.dataset.i), true);
+    });
+
+    // Mouse wheel / trackpad moves line by line while reading.
+    let wheelAccum = 0;
+    el.scroller.addEventListener('wheel', (e) => {
+        if (!state.playing) return;
+        e.preventDefault();
+        wheelAccum += e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY;
+        while (Math.abs(wheelAccum) >= 60) {
+            const dir = Math.sign(wheelAccum);
+            stepLines(dir);
+            wheelAccum -= dir * 60;
+        }
+        pokeHud();
+    }, { passive: false });
+
+    el.stage.addEventListener('pointermove', pokeHud);
+    el.stage.addEventListener('pointerdown', pokeHud);
+
+    // Keyboard, presentation clickers and joysticks (they send arrow / page keys).
+    const STEP_KEYS = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1, PageUp: -10, PageDown: 10 };
+    let heldKey = null;
+    let holdDelay = 0;
+    let holdRepeat = 0;
+
+    function releaseHeldKey() {
+        heldKey = null;
+        clearTimeout(holdDelay);
+        clearInterval(holdRepeat);
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (!state.playing || e.ctrlKey || e.metaKey || e.altKey) return;
+
+        if (e.key in STEP_KEYS) {
+            e.preventDefault();
+            if (heldKey === e.key) return; // ignore OS auto-repeat; we run our own
+            releaseHeldKey();
+            heldKey = e.key;
+            stepWords(STEP_KEYS[e.key]);
+            holdDelay = setTimeout(() => {
+                holdRepeat = setInterval(() => { if (heldKey) stepWords(STEP_KEYS[heldKey]); }, 90);
+            }, 300);
+            pokeHud();
+            return;
+        }
+
+        let handled = true;
+        switch (e.code) {
+            case 'Space': if (!e.repeat) togglePause(); break;
+            case 'Escape': stop(); break;
+            case 'Home': setIndex(0, true); break;
+            case 'End': setIndex(state.words.length - 1, true); break;
+            case 'Equal': case 'NumpadAdd': adjustSpeed(10); break;
+            case 'Minus': case 'NumpadSubtract': adjustSpeed(-10); break;
+            case 'KeyF': if (!e.repeat) toggleFullscreen(); break;
+            default: handled = false;
+        }
+        if (handled) e.preventDefault();
+    });
+
+    window.addEventListener('keyup', (e) => { if (e.key === heldKey) releaseHeldKey(); });
+    window.addEventListener('blur', releaseHeldKey);
+
+    // Re-measure when the reading area changes size (rotation, window resize, panel toggle).
+    if ('ResizeObserver' in window) {
+        new ResizeObserver(() => {
+            state.layoutDirty = true;
+            positionPreview();
+        }).observe(el.scroller);
+    } else {
+        window.addEventListener('resize', () => { state.layoutDirty = true; positionPreview(); });
+    }
+
+    // =====================================================================
+    //  Boot
+    // =====================================================================
+    const savedText = storage.get(TEXT_KEY);
+    el.script.value = savedText !== null ? savedText : (SAMPLE_TEXT[settings.uiLang] || SAMPLE_TEXT.en);
+
+    onTextChanged(true);
+    applyVisualSettings();
+    applyLanguage();
+    refreshSupportNotice();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { state.layoutDirty = true; positionPreview(); });
+
+    // Handy for debugging from the console.
+    window.VibePrompter = { state, settings, start, stop, pause, resume, setIndex, matchSpeech, detectLanguage, tokenize };
+})();
+</script>
 </body>
 </html>
